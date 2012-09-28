@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
-import threading
 import irc
+import logging
 import thebot
+import threading
 
 
 class IRCRequest(thebot.Request):
@@ -15,6 +16,13 @@ class IRCRequest(thebot.Request):
     def respond(self, message):
         for line in message.split('\n'):
             self.bot.respond(line, channel=self.channel, nick=self.nick)
+
+
+class IRCConnection(irc.IRCConnection):
+    def get_logger(self, logger_name, filename):
+        """We override this method because don't want to have a separate log for irc messages.
+        """
+        return logging.getLogger(logger_name)
 
 
 class Adapter(thebot.Adapter):
@@ -58,7 +66,7 @@ class Adapter(thebot.Adapter):
         nick = self.args.irc_nick
         channels = self.args.irc_channels.split(',')
 
-        conn = irc.IRCConnection(host, port, nick)
+        conn = IRCConnection(host, port, nick)
 
         on_line = self.on_line
         class IRCBot(irc.IRCBot):

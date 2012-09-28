@@ -3,6 +3,7 @@
 import importlib
 import re
 import argparse
+import logging
 
 # pass this object to callback, to terminate the bot
 EXIT = object()
@@ -65,6 +66,12 @@ class Bot(object):
 
         args = parser.parse_args(command_line_args)
 
+        logging.basicConfig(
+            filename=args.log_filename,
+            format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
+            level=logging.DEBUG if args.verbose else logging.WARNING,
+        )
+
         # adapters and plugins initialization
 
         for adapter in adapter_classes:
@@ -85,6 +92,10 @@ class Bot(object):
         parser.add_argument(
             '--verbose', '-v', action='store_true', default=False,
             help='Show more output.'
+        )
+        parser.add_argument(
+            '--log-filename', default='thebot.log',
+            help='Log\'s filename. Default: thebot.log.'
         )
 
         group = parser.add_argument_group('General options')
