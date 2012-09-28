@@ -13,7 +13,8 @@ class IRCRequest(thebot.Request):
         self.channel = channel
 
     def respond(self, message):
-        self.bot.respond(message, channel=self.channel, nick=self.nick)
+        for line in message.split('\n'):
+            self.bot.respond(line, channel=self.channel, nick=self.nick)
 
 
 class Adapter(thebot.Adapter):
