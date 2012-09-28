@@ -1,3 +1,0 @@
-requests
-irckit
-anyjson==0.3.3
