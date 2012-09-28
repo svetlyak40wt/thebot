@@ -2,12 +2,13 @@
 # coding: utf-8
 
 import thebot
+import sys
 
 from time import sleep
 
 def main():
     #bot = Bot([IRCAdapter], [ImagePlugin])
-    bot = thebot.Bot(['console'], ['image'])
+    bot = thebot.Bot(sys.argv[1:])
     try:
         while not bot.exiting:
             sleep(1)

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import threading
 import irc
 import thebot
@@ -15,6 +17,27 @@ class IRCRequest(thebot.Request):
 
 
 class Adapter(thebot.Adapter):
+    @staticmethod
+    def get_options(parser):
+        group = parser.add_argument_group('IRC options')
+        group.add_argument(
+            '--irc-host', default='irc.freenode.net',
+            help='Server to connect. Default: irc.freenode.net.'
+        )
+        group.add_argument(
+            '--irc-port', default=6667,
+            help='Port to connect. Default: 6667.'
+        )
+        group.add_argument(
+            '--irc-channels', default='thebot',
+            help='Comma-separated list of channels. Default: thebot.',
+        )
+        group.add_argument(
+            '--irc-nick', default='thebot',
+            help='IRC nick. Default: thebot.',
+        )
+
+
     def on_line(self, nick, message, channel):
         request = IRCRequest(message, self.bot, nick, channel)
         return self.callback(request)
@@ -29,10 +52,11 @@ class Adapter(thebot.Adapter):
         Convenience function to start a bot on the given network, optionally joining
         some channels
         """
-        host = 'irc.freenode.net'
-        port = 6667
-        nick = 'thebot'
-        channels = ['svetlyak']
+        host = self.args.irc_host
+        port = self.args.irc_port
+        nick = self.args.irc_nick
+        channels = self.args.irc_channels.split(',')
+
         conn = irc.IRCConnection(host, port, nick)
 
         on_line = self.on_line

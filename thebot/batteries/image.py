@@ -3,9 +3,10 @@
 import requests
 import anyjson
 import random
+import thebot
 
 
-class Plugin(object):
+class Plugin(thebot.Plugin):
     def get_callbacks(self):
         return [
             ('(image|img)( me)? (?P<query>.+)', self.image),
