@@ -1,6 +1,6 @@
+fancycompleter==0.4
 nose==1.2.1
 pdbpp==0.7.2
-fancycompleter==0.4
 Pygments==1.5
 pyrepl==0.8.4
 wmctrl==0.1

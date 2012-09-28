@@ -1,5 +1,5 @@
 -e git+git@github.com:svetlyak40wt/pip-tools.git@aaef5ca40263a03a93746deb5db79f30275d03ed#egg=pip_tools-dev
--e git+git@github.com:svetlyak40wt/thebot.git@eab56f7a392db008acabe3c300098b94ed89d123#egg=thebot-dev
+-e git+git@github.com:svetlyak40wt/thebot.git@87459a89a46349414028018cdbf22ad094c08063#egg=thebot-dev
 anyjson==0.3.3
 irckit==0.1.1
 requests==0.14.0
