@@ -2,3 +2,5 @@
 *.pyc
 /env
 /thebot.egg-info/
+/thebot.log
+/.vim/ide.session

@@ -22,6 +22,12 @@ class Adapter(object):
         self.args = args
         self.callback = callback
 
+    def start(self):
+        """You have to override this method, if you plugin requires some background activity.
+
+        Here you can create a thread, but don't forget to make its `daemon` attrubute equal to True.
+        """
+
 
 class Plugin(object):
     def __init__(self, args):
@@ -29,7 +35,7 @@ class Plugin(object):
 
 
 class Bot(object):
-    def __init__(self, command_line_args):
+    def __init__(self, command_line_args=[], adapters=None, plugins=None):
         self.adapters = []
         self.plugins = []
         self.patterns = []
@@ -57,8 +63,17 @@ class Bot(object):
         parser = Bot.get_general_options()
         args, unknown = parser.parse_known_args(filter(lambda x: x not in ('--help', '-h'), command_line_args))
 
-        adapter_classes = map(lambda a: load(a, 'Adapter'), args.adapters.split(','))
-        plugin_classes = map(lambda a: load(a, 'Plugin'), args.plugins.split(','))
+        if adapters is None:
+            adapter_classes = map(lambda a: load(a, 'Adapter'), args.adapters.split(','))
+        else:
+            # we've got adapters argument (it is used for testing purpose
+            adapter_classes = adapters
+
+        if plugins is None:
+            plugin_classes = map(lambda a: load(a, 'Plugin'), args.plugins.split(','))
+        else:
+            # we've got adapters argument (it is used for testing purpose
+            plugin_classes = plugins
 
         for cls in adapter_classes + plugin_classes:
             if hasattr(cls, 'get_options'):

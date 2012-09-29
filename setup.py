@@ -20,5 +20,5 @@ setup(
     ],
     packages=find_packages(),
     scripts=['scripts/thebot'],
-    install_requires = open('requirements.txt').readlines()
+    install_requires = open('requirements/base.txt').readlines()
 )

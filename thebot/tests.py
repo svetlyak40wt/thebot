@@ -1,13 +1,10 @@
-from thebot import Bot, Request
+from thebot import Bot, Request, Adapter, Plugin
 from nose.tools import eq_, assert_raises
 
-class TestAdapter(object):
-    def __init__(self, callback):
-        self.callback = callback
+class TestAdapter(Adapter):
+    def __init__(self, *args, **kwargs):
+        super(TestAdapter, self).__init__(*args, **kwargs)
         self._lines = []
-
-    def start(self):
-        pass
 
     def write(self, input_line):
         """This method is for test purpose.
@@ -20,7 +17,7 @@ class TestAdapter(object):
         self.callback(TestRequest(input_line))
 
 
-class TestPlugin(object):
+class TestPlugin(Plugin):
     def get_callbacks(self):
         return [
             ('^show me a cat$', self.show_a_cat),
@@ -68,7 +65,7 @@ def test_unknown_command():
 
 
 def test_exception_raised_if_plugin_returns_not_none():
-    class BadPlugin(object):
+    class BadPlugin(Plugin):
         def get_callbacks(self):
             return [
                 ('^do$', self.do),
