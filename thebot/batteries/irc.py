@@ -47,10 +47,6 @@ class Adapter(thebot.Adapter):
         )
 
 
-    def on_line(self, nick, message, channel):
-        request = IRCRequest(message, self.bot, nick, channel)
-        return self.callback(request)
-
     def start(self):
         thread = threading.Thread(target=self.run_bot)
         thread.daemon = True
@@ -68,16 +64,22 @@ class Adapter(thebot.Adapter):
 
         conn = IRCConnection(host, port, nick)
 
-        on_line = self.on_line
+        def on_message(nick, message, channel):
+            """A callback to be called by irckit's bot when new message will arrive.
+
+            In it's turn, it will call TheBot's callback, to pass
+            request into it.
+            """
+            request = IRCRequest(message, self.bot, nick, channel)
+            return self.callback(request)
+
         class IRCBot(irc.IRCBot):
             def command_patterns(self):
                 return (
-                    self.ping('^.*', on_line),
+                    self.ping('^.*', on_message),
                 )
 
         self.bot = IRCBot(conn)
-        #TODO refactor
-        self.bot.on_line = self.on_line
 
         while 1:
             conn.connect()
