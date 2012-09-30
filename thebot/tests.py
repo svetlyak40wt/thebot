@@ -1,4 +1,4 @@
-from thebot import Bot, Request, Adapter, Plugin
+from thebot import Bot, Request, Adapter, Plugin, Storage
 from nose.tools import eq_, assert_raises
 
 class TestAdapter(Adapter):
@@ -79,3 +79,40 @@ def test_exception_raised_if_plugin_returns_not_none():
     adapter = bot.adapters[0]
 
     assert_raises(RuntimeError, adapter.write, 'do')
+
+
+def test_simple_storage():
+    storage = Storage('/tmp/thebot.storage')
+    storage.clear()
+
+    eq_([], storage.keys())
+
+    storage['blah'] = 'minor'
+    storage['one'] = {'some': 'dict'}
+
+    eq_(['blah', 'one'], sorted(storage.keys()))
+    eq_('minor', storage['blah'])
+
+
+def test_storage_nesting():
+    storage = Storage('/tmp/thebot.storage')
+    storage.clear()
+
+    first = storage.with_prefix('first:')
+    second = storage.with_prefix('second:')
+
+    eq_([], storage.keys())
+
+    first['blah'] = 'minor'
+    second['one'] = {'some': 'dict'}
+
+    eq_(['first:blah', 'second:one'], sorted(storage.keys()))
+    eq_(['first:blah'], sorted(first.keys()))
+    eq_(['second:one'], sorted(second.keys()))
+
+    eq_('minor', first['blah'])
+    assert_raises(KeyError, lambda: second['blah'])
+
+    first.clear()
+    eq_(['second:one'], sorted(storage.keys()))
+

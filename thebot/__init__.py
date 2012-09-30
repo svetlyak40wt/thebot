@@ -4,6 +4,7 @@ import importlib
 import re
 import argparse
 import logging
+import shelve
 
 # pass this object to callback, to terminate the bot
 EXIT = object()
@@ -32,6 +33,32 @@ class Adapter(object):
 class Plugin(object):
     def __init__(self, args):
         self.args = args
+
+
+class Storage(object):
+    def __init__(self, filename, prefix=''):
+        if isinstance(filename, basestring):
+            self._shelve = shelve.open(filename)
+        else:
+            self._shelve = filename
+
+        self.prefix = prefix
+
+    def __getitem__(self, name):
+        return self._shelve.__getitem__(self.prefix + name)
+
+    def __setitem__(self, name, value):
+        return self._shelve.__setitem__(self.prefix + name, value)
+
+    def keys(self):
+        return filter(lambda x: x.startswith(self.prefix), self._shelve.keys())
+
+    def clear(self):
+        for key in self.keys():
+            del self._shelve[key]
+
+    def with_prefix(self, prefix):
+        return Storage(self._shelve, prefix=prefix)
 
 
 class Bot(object):
