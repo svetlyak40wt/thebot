@@ -34,6 +34,25 @@ class Plugin(object):
     def __init__(self, args):
         self.args = args
 
+    def get_callbacks(self):
+        for name in dir(self):
+            value = getattr(self, name)
+            if callable(value):
+                patterns = getattr(value, '_patterns', [])
+                for pattern in patterns:
+                    yield (pattern, value)
+
+
+def route(pattern):
+    """Decorator to assign routes to plugin's methods.
+    """
+    def deco(func):
+        if getattr(func, '_patterns', None) is None:
+            func._patterns = []
+        func._patterns.append(pattern)
+        return func
+    return deco
+
 
 class Storage(object):
     def __init__(self, filename, prefix=''):
@@ -121,8 +140,8 @@ class Bot(object):
             a.start()
             self.adapters.append(a)
 
-        for plugin in plugin_classes:
-            p = plugin(args)
+        for plugin_cls in plugin_classes:
+            p = plugin_cls(args)
             self.plugins.append(p)
             self.patterns.extend(p.get_callbacks())
 

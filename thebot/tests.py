@@ -1,5 +1,6 @@
-from thebot import Bot, Request, Adapter, Plugin, Storage
+from thebot import Bot, Request, Adapter, Plugin, Storage, route
 from nose.tools import eq_, assert_raises
+
 
 class TestAdapter(Adapter):
     def __init__(self, *args, **kwargs):
@@ -18,15 +19,11 @@ class TestAdapter(Adapter):
 
 
 class TestPlugin(Plugin):
-    def get_callbacks(self):
-        return [
-            ('^show me a cat$', self.show_a_cat),
-            ('^find (?P<this>.*)$', self.find),
-        ]
-
+    @route('^show me a cat$')
     def show_a_cat(self, request, match):
         request.respond('the Cat')
 
+    @route('^find (?P<this>.*)$')
     def find(self, request, match):
         request.respond('I found {0}'.format(match.group('this')))
 
@@ -66,11 +63,7 @@ def test_unknown_command():
 
 def test_exception_raised_if_plugin_returns_not_none():
     class BadPlugin(Plugin):
-        def get_callbacks(self):
-            return [
-                ('^do$', self.do),
-            ]
-
+        @route('^do$')
         def do(self, request, match):
             return 'Hello world'
 
