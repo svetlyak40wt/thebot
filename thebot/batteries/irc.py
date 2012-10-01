@@ -9,13 +9,13 @@ import threading
 class IRCRequest(thebot.Request):
     def __init__(self, message, bot, nick, channel):
         super(IRCRequest, self).__init__(message)
-        self.bot = bot
+        self.irc_bot = bot
         self.nick = nick
         self.channel = channel
 
     def respond(self, message):
         for line in message.split('\n'):
-            self.bot.respond(line, channel=self.channel, nick=self.nick)
+            self.irc_bot.respond(line, channel=self.channel, nick=self.nick)
 
 
 class IRCConnection(irc.IRCConnection):
@@ -57,10 +57,10 @@ class Adapter(thebot.Adapter):
         Convenience function to start a bot on the given network, optionally joining
         some channels
         """
-        host = self.args.irc_host
-        port = self.args.irc_port
-        nick = self.args.irc_nick
-        channels = self.args.irc_channels.split(',')
+        host = self.bot.config.irc_host
+        port = self.bot.config.irc_port
+        nick = self.bot.config.irc_nick
+        channels = self.bot.config.irc_channels.split(',')
 
         conn = IRCConnection(host, port, nick)
 
@@ -70,7 +70,7 @@ class Adapter(thebot.Adapter):
             In it's turn, it will call TheBot's callback, to pass
             request into it.
             """
-            request = IRCRequest(message, self.bot, nick, channel)
+            request = IRCRequest(message, self.irc_bot, nick, channel)
             return self.callback(request)
 
         class IRCBot(irc.IRCBot):
@@ -79,7 +79,7 @@ class Adapter(thebot.Adapter):
                     self.ping('^.*', on_message),
                 )
 
-        self.bot = IRCBot(conn)
+        self.irc_bot = IRCBot(conn)
 
         while 1:
             conn.connect()

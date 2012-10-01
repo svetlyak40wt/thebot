@@ -19,8 +19,8 @@ class Request(object):
 
 
 class Adapter(object):
-    def __init__(self, args, callback):
-        self.args = args
+    def __init__(self, bot, callback):
+        self.bot = bot
         self.callback = callback
 
     def start(self):
@@ -31,8 +31,8 @@ class Adapter(object):
 
 
 class Plugin(object):
-    def __init__(self, args):
-        self.args = args
+    def __init__(self, bot):
+        self.bot = bot
 
     def get_callbacks(self):
         for name in dir(self):
@@ -52,6 +52,25 @@ def route(pattern):
         func._patterns.append(pattern)
         return func
     return deco
+
+
+class HelpPlugin(Plugin):
+    @route('help')
+    def help(self, request):
+        """Shows a help."""
+        lines = []
+        for pattern, callback in self.bot.patterns:
+            docstring = callback.__doc__
+            if docstring:
+                lines.append('  ' + pattern + ' — ' + docstring)
+            else:
+                lines.append('  ' + pattern)
+
+        lines.sort()
+        lines.insert(0, 'I support following commands:')
+
+        request.respond('\n'.join(lines))
+
 
 
 class Storage(object):
@@ -121,27 +140,29 @@ class Bot(object):
             # we've got adapters argument (it is used for testing purpose
             plugin_classes = plugins
 
+        plugin_classes.append(HelpPlugin)
+
         for cls in adapter_classes + plugin_classes:
             if hasattr(cls, 'get_options'):
                 cls.get_options(parser)
 
-        args = parser.parse_args(command_line_args)
+        self.config = parser.parse_args(command_line_args)
 
         logging.basicConfig(
-            filename=args.log_filename,
+            filename=self.config.log_filename,
             format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
-            level=logging.DEBUG if args.verbose else logging.WARNING,
+            level=logging.DEBUG if self.config.verbose else logging.WARNING,
         )
 
         # adapters and plugins initialization
 
         for adapter in adapter_classes:
-            a = adapter(args, callback=self.on_request)
+            a = adapter(self, callback=self.on_request)
             a.start()
             self.adapters.append(a)
 
         for plugin_cls in plugin_classes:
-            p = plugin_cls(args)
+            p = plugin_cls(self)
             self.plugins.append(p)
             self.patterns.extend(p.get_callbacks())
 

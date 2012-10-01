@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from thebot import Bot, Request, Adapter, Plugin, Storage, route
 from nose.tools import eq_, assert_raises
 
@@ -21,10 +23,12 @@ class TestAdapter(Adapter):
 class TestPlugin(Plugin):
     @route('^show me a cat$')
     def show_a_cat(self, request):
+        """Shows a cat."""
         request.respond('the Cat')
 
     @route('^find (?P<this>.*)$')
     def find(self, request, this=None):
+        """Making a fake search of the term."""
         request.respond('I found {0}'.format(this))
 
 
@@ -35,9 +39,9 @@ def test_install_adapters():
 
 def test_install_plugins():
     bot = Bot(adapters=[], plugins=[TestPlugin])
-    assert len(bot.adapters) == 0
-    assert len(bot.plugins) == 1
-    assert len(bot.patterns) == 2
+    eq_(0, len(bot.adapters))
+    eq_(2, len(bot.plugins)) # Help plugin is added by default
+    eq_(3, len(bot.patterns))
 
 
 def test_one_line():
@@ -108,4 +112,20 @@ def test_storage_nesting():
 
     first.clear()
     eq_(['second:one'], sorted(storage.keys()))
+
+
+def test_help_command():
+    bot = Bot(adapters=[TestAdapter], plugins=[TestPlugin])
+    adapter = bot.adapters[0]
+
+    adapter.write('help')
+    eq_(
+        [
+            'I support following commands:\n'
+            '  ^find (?P<this>.*)$ — Making a fake search of the term.\n'
+            '  ^help$ — Shows a help.\n'
+            '  ^show me a cat$ — Shows a cat.'
+        ],
+        adapter._lines
+    )
 
