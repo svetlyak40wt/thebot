@@ -177,7 +177,7 @@ class Bot(object):
             for pattern, callback in self.patterns:
                 match = re.match(pattern, request.message)
                 if match is not None:
-                    result = callback(request, match)
+                    result = callback(request, **match.groupdict())
                     if result is not None:
                         raise RuntimeError('Plugin {0} should not return response directly. Use request.respond(some message).')
                     break

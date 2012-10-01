@@ -20,12 +20,12 @@ class TestAdapter(Adapter):
 
 class TestPlugin(Plugin):
     @route('^show me a cat$')
-    def show_a_cat(self, request, match):
+    def show_a_cat(self, request):
         request.respond('the Cat')
 
     @route('^find (?P<this>.*)$')
-    def find(self, request, match):
-        request.respond('I found {0}'.format(match.group('this')))
+    def find(self, request, this=None):
+        request.respond('I found {0}'.format(this))
 
 
 def test_install_adapters():
@@ -64,7 +64,7 @@ def test_unknown_command():
 def test_exception_raised_if_plugin_returns_not_none():
     class BadPlugin(Plugin):
         @route('^do$')
-        def do(self, request, match):
+        def do(self, request):
             return 'Hello world'
 
 
