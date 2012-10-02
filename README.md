@@ -15,6 +15,42 @@ Build Status
 This project uses Travis for continuous integration:  
 [![Build Status](https://secure.travis-ci.org/svetlyak40wt/thebot.png)](http://travis-ci.org/svetlyak40wt/thebot)
 
+Installation
+------------
+
+    virtualenv env
+    source env/bin/activate
+    pip install 'git+git://github.com/svetlyak40wt/thebot.git'
+    thebot
+
+To connect TheBot to the IRC channel do:
+
+    thebot --adapter irc --irc-host irc.freenode.net --irc-channels somechannel --irc-nick thebot
+
+To turn on more useful plugins, install them via pip. For example, to install Instagram and Github plugins, do:
+
+    pip install 'git+git://github.com/svetlyak40wt/thebot-github.git'
+    pip install 'git+git://github.com/svetlyak40wt/thebot-instagram.git'
+    thebot --adapter irc --plugins instagram --irc-host irc.freenode.net --irc-channels somechannel --irc-nick thebot
+
+Then, join this channel and send `thebot, instagram on` message. To list all supported command, issue the message
+`thebot, help`.
+
+
+Available plugins
+-----------------
+
+### Builtins
+
+* [image](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/image.py) — uses Google Image and [mustachify.me](http://mustachify.me), to search images and to make them funny.
+
+### External
+
+* [github](https://github.com/svetlyak40wt/thebot-github) — allows to track new issues, pull requests and comments.
+* [instagram](https://github.com/svetlyak40wt/thebot-instagram) — posts new popular images from Instagram.
+* Add yours plugins to this list!
+
+
 Alternatives
 ------------
 
