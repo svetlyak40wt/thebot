@@ -21,12 +21,12 @@ class TestAdapter(Adapter):
 
 
 class TestPlugin(Plugin):
-    @route('^show me a cat$')
+    @route('show me a cat')
     def show_a_cat(self, request):
         """Shows a cat."""
         request.respond('the Cat')
 
-    @route('^find (?P<this>.*)$')
+    @route('find (?P<this>.*)')
     def find(self, request, this=None):
         """Making a fake search of the term."""
         request.respond('I found {0}'.format(this))
@@ -122,9 +122,9 @@ def test_help_command():
     eq_(
         [
             'I support following commands:\n'
-            '  ^find (?P<this>.*)$ — Making a fake search of the term.\n'
-            '  ^help$ — Shows a help.\n'
-            '  ^show me a cat$ — Shows a cat.'
+            '  find (?P<this>.*) — Making a fake search of the term.\n'
+            '  help — Shows a help.\n'
+            '  show me a cat — Shows a cat.'
         ],
         adapter._lines
     )
