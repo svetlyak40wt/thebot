@@ -9,6 +9,11 @@ The Bot is written in orthodox Python and can be installed via [pip][].
 It's functionality can be extended by installation of additional python packages,
 you don't have to clone a repository and hack some code there.
 
+Build Status
+------------
+
+This project uses Travis for continuous integration: [![Build Status](https://secure.travis-ci.org/svetlyak40wt/thebot.png)](http://travis-ci.org/svetlyak40wt/thebot).
+
 Alternatives
 ------------
 
