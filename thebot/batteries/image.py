@@ -47,11 +47,12 @@ class Plugin(thebot.Plugin):
                 safe='active',
             )
         )
-        content = response.content
-        data = anyjson.deserialize(content)
-        images = data['responseData']['results']
+        if response.status_code == 200:
+            content = response.content
+            data = anyjson.deserialize(content)
+            images = data['responseData']['results']
 
-        if len(images) > 0:
-            image = random.choice(images)
-            return image['unescapedUrl']
+            if len(images) > 0:
+                image = random.choice(images[:5])
+                return image['unescapedUrl']
 
