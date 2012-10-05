@@ -64,7 +64,8 @@ them and come back to ask The Bot to forgive you treason.
 * http://gozerbot.org/ and his son https://code.google.com/p/jsonbot/
 * http://pypi.python.org/pypi/supybot/
 * https://github.com/brunobord/cmdbot/
-* http://inamidst.com/phenny/ и его продолжение для Python3 https://github.com/sbp/duxlot/
-* https://github.com/toastdriven/toastbot использует irckit и gevent
+* http://inamidst.com/phenny/ and a Python3 version https://github.com/sbp/duxlot/
+* https://github.com/toastdriven/toastbot uses irckit и gevent
+* https://github.com/gbin/err too complex and over-engeneered architecture, but has plugins.
 
 [pip]: http://pypi.python.org/pypi/pip

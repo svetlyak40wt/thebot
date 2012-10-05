@@ -8,6 +8,8 @@ import shelve
 import threading
 import time
 
+__version__ = '0.1.0'
+
 # pass this object to callback, to terminate the bot
 EXIT = object()
 
@@ -35,6 +37,7 @@ class Adapter(object):
 class Plugin(object):
     def __init__(self, bot):
         self.bot = bot
+        self.storage = self.bot.storage.with_prefix(self.__module__)
 
     def get_callbacks(self):
         for name in dir(self):
@@ -144,6 +147,9 @@ class Storage(object):
     def __getitem__(self, name):
         return self._shelve.__getitem__(self.prefix + name)
 
+    def get(self, name):
+        return self._shelve.get(self.prefix + name)
+
     def __setitem__(self, name, value):
         return self._shelve.__setitem__(self.prefix + name, value)
 
@@ -156,6 +162,9 @@ class Storage(object):
 
     def with_prefix(self, prefix):
         return Storage(self._shelve, prefix=prefix)
+
+    def close(self):
+        self._shelve.close()
 
 
 class Bot(object):
@@ -207,6 +216,8 @@ class Bot(object):
 
         self.config = parser.parse_args(command_line_args)
 
+        self.storage = Storage(self.config.storage_filename)
+
         logging.basicConfig(
             filename=self.config.log_filename,
             format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
@@ -238,6 +249,10 @@ class Bot(object):
             '--log-filename', default='thebot.log',
             help='Log\'s filename. Default: thebot.log.'
         )
+        parser.add_argument(
+            '--storage-filename', default='thebot.storage',
+            help='Path to a database file, used for TheBot\'s memory.'
+        )
 
         group = parser.add_argument_group('General options')
         group.add_argument(
@@ -267,5 +282,5 @@ class Bot(object):
     def close(self):
         """Will close all connections here.
         """
-        pass
+        self.storage.close()
 

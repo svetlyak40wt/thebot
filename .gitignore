@@ -4,3 +4,4 @@
 /thebot.egg-info/
 /thebot.log
 /.vim/ide.session
+/thebot.storage.db
