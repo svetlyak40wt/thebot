@@ -10,6 +10,6 @@ else:
         return value
 
     def force_str(value):
-        if isinstance(value, str):
+        if isinstance(value, unicode):
             value = value.encode('utf-8')
         return value
