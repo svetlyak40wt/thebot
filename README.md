@@ -48,6 +48,7 @@ Available plugins
 
 * [github](https://github.com/svetlyak40wt/thebot-github) — allows to track new issues, pull requests and comments.
 * [instagram](https://github.com/svetlyak40wt/thebot-instagram) — posts new popular images from Instagram.
+* [translate](https://github.com/svetlyak40wt/thebot-translate) — translates texts from one language to another.
 * Add yours plugins to this list!
 
 
