@@ -5,7 +5,7 @@ import thebot
 
 class ConsoleRequest(thebot.Request):
     def respond(self, message):
-        sys.stdout.write('{0}\n'.format(message))
+        sys.stdout.write('{0}\n'.format(thebot.utils.force_str(message)))
         sys.stdout.flush()
 
 

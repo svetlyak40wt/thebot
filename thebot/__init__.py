@@ -1,4 +1,5 @@
 # coding: utf-8
+from __future__ import absolute_import
 
 import argparse
 import importlib
@@ -7,6 +8,8 @@ import re
 import shelve
 import threading
 import time
+
+from . import utils
 
 __version__ = '0.1.0'
 
@@ -124,14 +127,14 @@ class HelpPlugin(Plugin):
         for pattern, callback in self.bot.patterns:
             docstring = callback.__doc__
             if docstring:
-                lines.append('  ' + pattern + ' — ' + docstring)
+                lines.append(u'  ' + pattern + u' — ' + docstring)
             else:
-                lines.append('  ' + pattern)
+                lines.append(u'  ' + pattern)
 
         lines.sort()
-        lines.insert(0, 'I support following commands:')
+        lines.insert(0, u'I support following commands:')
 
-        request.respond('\n'.join(lines))
+        request.respond(u'\n'.join(lines))
 
 
 
@@ -235,6 +238,12 @@ class Bot(object):
             p = plugin_cls(self)
             self.plugins.append(p)
             self.patterns.extend(p.get_callbacks())
+
+        self.patterns = [
+            (utils.force_unicode(pattern), callback)
+            for pattern, callback in self.patterns
+        ]
+
 
     @staticmethod
     def get_general_options():
