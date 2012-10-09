@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import re
 import irc
 import logging
 import thebot
@@ -7,15 +8,17 @@ import threading
 
 
 class IRCRequest(thebot.Request):
-    def __init__(self, message, bot, nick, channel):
+    def __init__(self, message, connection, nick, channel):
         super(IRCRequest, self).__init__(message)
-        self.irc_bot = bot
+        self.connection = connection
         self.nick = nick
         self.channel = channel
 
     def respond(self, message):
+        message = thebot.utils.force_str(message)
+
         for line in message.split('\n'):
-            self.irc_bot.respond(line, channel=self.channel, nick=self.nick)
+            self.connection.respond(line, channel=self.channel, nick=self.nick)
 
 
 class IRCConnection(irc.IRCConnection):
@@ -62,24 +65,25 @@ class Adapter(thebot.Adapter):
         nick = self.bot.config.irc_nick
         channels = self.bot.config.irc_channels.split(',')
 
-        conn = IRCConnection(host, port, nick)
-
         def on_message(nick, message, channel):
-            """A callback to be called by irckit's bot when new message will arrive.
+            """A callback to be called by irckit when new message will arrive.
 
-            In it's turn, it will call TheBot's callback, to pass
-            request into it.
+            It verifies if a bot's nick is mentioned, and pass data to TheBot.
             """
-            request = IRCRequest(message, self.irc_bot, nick, channel)
-            return self.callback(request)
+            message = thebot.utils.force_unicode(message)
+            nick_re = re.compile(u'^%s[:,\s]\s*' % conn.nick)
 
-        class IRCBot(irc.IRCBot):
-            def command_patterns(self):
-                return (
-                    self.ping('^.*', on_message),
-                )
+            if nick_re.match(message) is not None:
+                message = nick_re.sub(u'', message)
+                request = IRCRequest(message, self.irc_connection, nick, channel)
+                return self.callback(request)
 
-        self.irc_bot = IRCBot(conn)
+        conn = IRCConnection(host, port, nick)
+        conn.register_callbacks((
+            (re.compile(u'.*'), on_message),
+        ))
+
+        self.irc_connection = conn
 
         while 1:
             conn.connect()
