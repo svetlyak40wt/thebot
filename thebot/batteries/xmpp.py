@@ -1,23 +1,31 @@
 from __future__ import absolute_import
 
-from sleekxmpp import ClientXMPP
-
+import copy
+import sleekxmpp
 import thebot
 import threading
-import copy
 
 
 class XMPPRequest(thebot.Request):
-    def __init__(self, message, xmpp_message):
+    def __init__(self, message, bot, _from):
         super(XMPPRequest, self).__init__(message)
-        self.xmpp_message = xmpp_message
+        self.bot = bot
+        self._from = _from
 
     def respond(self, message):
         # we have to copy original message each time, because
         # `reply` method changes object's content
-        xmpp_message = copy.copy(self.xmpp_message)
-        reply = xmpp_message.reply(message)
-        reply.send()
+        # xmpp_message = copy.copy(self.xmpp_message)
+        # reply = xmpp_message.reply(message)
+        # reply.send()
+
+        msg = sleekxmpp.stanza.message.Message()
+        msg['to'] = self._from
+        msg['type'] = 'chat'
+        msg['body'] = message
+
+        adapter = self.bot.get_adapter('xmpp')
+        adapter.xmpp_bot.send(msg)
 
 
 class Adapter(thebot.Adapter):
@@ -59,7 +67,7 @@ class Adapter(thebot.Adapter):
 
             if msg['type'] in ('chat', 'normal'):
                 if msg['from'] != msg['to']:
-                    request = XMPPRequest(msg['body'], msg)
+                    request = XMPPRequest(msg['body'], self.bot, unicode(msg['from']))
                     self.callback(request)
 
 
@@ -68,7 +76,7 @@ class Adapter(thebot.Adapter):
             self.xmpp_bot.send_presence()
 
 
-        self.xmpp_bot = ClientXMPP(jid, password)
+        self.xmpp_bot = sleekxmpp.ClientXMPP(jid, password)
         self.xmpp_bot._use_daemons = True
         self.xmpp_bot.add_event_handler('session_start', on_start)
         self.xmpp_bot.add_event_handler('message', on_message)

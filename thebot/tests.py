@@ -5,6 +5,8 @@ from nose.tools import eq_, assert_raises
 
 
 class TestAdapter(Adapter):
+    name = 'test'
+
     def __init__(self, *args, **kwargs):
         super(TestAdapter, self).__init__(*args, **kwargs)
         self._lines = []
@@ -128,4 +130,43 @@ def test_help_command():
         ],
         adapter._lines
     )
+
+
+def test_delete_from_storage():
+    storage = Storage('/tmp/thebot.storage')
+    storage.clear()
+
+    storage['blah'] = 'minor'
+    del storage['blah']
+
+    eq_([], sorted(storage.keys()))
+
+
+
+def test_storage_restores_bot_attribute():
+    bot = Bot(adapters=[TestAdapter], plugins=[TestPlugin])
+
+    storage = Storage('/tmp/thebot.storage', specials=dict(bot=bot))
+    storage.clear()
+
+    original = Request('blah')
+    original.bot = bot
+
+    storage['request'] = original
+
+    restored = storage['request']
+    eq_(restored.bot, original.bot)
+
+
+def test_storage_with_prefix_keeps_specials():
+    storage = Storage('/tmp/thebot.storage', specials=dict(some='value'))
+    prefixed = storage.with_prefix('nested:')
+
+    eq_(storage.specials, prefixed.specials)
+
+
+def test_get_adapter_by_name():
+    bot = Bot(adapters=[TestAdapter])
+    adapter = bot.get_adapter('test')
+    assert isinstance(adapter, TestAdapter)
 

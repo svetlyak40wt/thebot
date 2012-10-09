@@ -8,17 +8,19 @@ import threading
 
 
 class IRCRequest(thebot.Request):
-    def __init__(self, message, connection, nick, channel):
+    def __init__(self, message, bot, nick, channel):
         super(IRCRequest, self).__init__(message)
-        self.connection = connection
+        self.bot = bot
         self.nick = nick
         self.channel = channel
 
     def respond(self, message):
         message = thebot.utils.force_str(message)
+        adapter = self.bot.get_adapter('irc')
+        irc_connection = adapter.irc_connection
 
         for line in message.split('\n'):
-            self.connection.respond(line, channel=self.channel, nick=self.nick)
+            irc_connection.respond(line, channel=self.channel, nick=self.nick)
 
 
 class IRCConnection(irc.IRCConnection):
@@ -75,7 +77,7 @@ class Adapter(thebot.Adapter):
 
             if nick_re.match(message) is not None:
                 message = nick_re.sub(u'', message)
-                request = IRCRequest(message, self.irc_connection, nick, channel)
+                request = IRCRequest(message, self.bot, nick, channel)
                 return self.callback(request)
 
         conn = IRCConnection(host, port, nick)

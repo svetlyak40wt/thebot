@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import argparse
+import copy
 import importlib
 import logging
 import re
@@ -40,7 +41,7 @@ class Adapter(object):
 class Plugin(object):
     def __init__(self, bot):
         self.bot = bot
-        self.storage = self.bot.storage.with_prefix(self.__module__)
+        self.storage = self.bot.storage.with_prefix(self.__module__ + ':')
 
     def get_callbacks(self):
         for name in dir(self):
@@ -66,10 +67,12 @@ class ThreadedPlugin(Plugin):
     def do_job(self):
         raise NotImplemented('Implement "do_job" method to get real work done.')
 
+    def is_working(self):
+        thread = getattr(self, '_thread', None)
+        return thread is not None and thread.is_alive()
 
     def start_worker(self, interval=60):
-        thread = getattr(self, '_thread', None)
-        if thread is not None and thread.is_alive():
+        if self.is_working():
             return
 
         self._event = threading.Event()
@@ -77,10 +80,13 @@ class ThreadedPlugin(Plugin):
         self._thread.daemon = True
         self._thread.start()
 
-    def stop_worker(self):
+    def stop_worker(self, wait=True):
         event = getattr(self, '_event', None)
         if event is not None:
             event.set()
+
+        if wait:
+            self._thread.join()
 
     def _worker(self, interval=60):
         countdown = 0
@@ -139,22 +145,41 @@ class HelpPlugin(Plugin):
 
 
 class Storage(object):
-    def __init__(self, filename, prefix=''):
+    def __init__(self, filename, prefix='', specials=None):
+        """Specials are used to restore references to some nonserializable objects,
+        such as TheBot itself.
+        """
         if isinstance(filename, basestring):
             self._shelve = shelve.open(filename)
         else:
             self._shelve = filename
 
         self.prefix = prefix
+        self.specials = specials or {}
 
     def __getitem__(self, name):
-        return self._shelve.__getitem__(self.prefix + name)
+        return self._restore_specials(self._shelve.__getitem__(self.prefix + name))
 
-    def get(self, name):
-        return self._shelve.get(self.prefix + name)
+    def get(self, name, default=None):
+        return self._restore_specials(self._shelve.get(self.prefix + name, default))
+
+    def _restore_specials(self, value):
+        for key, obj in self.specials.items():
+            if hasattr(value, key):
+                setattr(value, key, obj)
+        return value
+
 
     def __setitem__(self, name, value):
-        return self._shelve.__setitem__(self.prefix + name, value)
+        value_copy = copy.copy(value)
+        for key in self.specials:
+            if hasattr(value_copy, key):
+                setattr(value_copy, key, 'special:' + key)
+
+        return self._shelve.__setitem__(self.prefix + name, value_copy)
+
+    def __delitem__(self, name):
+        return self._shelve.__delitem__(self.prefix + name)
 
     def keys(self):
         return filter(lambda x: x.startswith(self.prefix), self._shelve.keys())
@@ -164,7 +189,7 @@ class Storage(object):
             del self._shelve[key]
 
     def with_prefix(self, prefix):
-        return Storage(self._shelve, prefix=prefix)
+        return Storage(self._shelve, prefix=prefix, specials=self.specials)
 
     def close(self):
         self._shelve.close()
@@ -193,7 +218,11 @@ class Bot(object):
                 except ImportError:
                     module = importlib.import_module('thebot.batteries.' + value)
 
-                return getattr(module, cls)
+                loaded_value = getattr(module, cls)
+                if not hasattr(loaded_value, 'name'):
+                    loaded_value.name = value
+                return loaded_value
+
             return value
 
         parser = Bot.get_general_options()
@@ -219,7 +248,7 @@ class Bot(object):
 
         self.config = parser.parse_args(command_line_args)
 
-        self.storage = Storage(self.config.storage_filename)
+        self.storage = Storage(self.config.storage_filename, specials=dict(bot=self))
 
         logging.basicConfig(
             filename=self.config.log_filename,
@@ -292,4 +321,11 @@ class Bot(object):
         """Will close all connections here.
         """
         self.storage.close()
+
+    def get_adapter(self, name):
+        """Returns adapter by it's name."""
+        for adapter in self.adapters:
+            if getattr(adapter, 'name', None) == name:
+                return adapter
+        raise KeyError(u'Adapter {} not found'.format(name))
 
