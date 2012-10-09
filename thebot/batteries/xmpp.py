@@ -4,15 +4,19 @@ from sleekxmpp import ClientXMPP
 
 import thebot
 import threading
+import copy
 
 
 class XMPPRequest(thebot.Request):
-    def __init__(self, message, connection):
+    def __init__(self, message, xmpp_message):
         super(XMPPRequest, self).__init__(message)
-        self.connection = connection
+        self.xmpp_message = xmpp_message
 
     def respond(self, message):
-        reply = self.connection.reply(message)
+        # we have to copy original message each time, because
+        # `reply` method changes object's content
+        xmpp_message = copy.copy(self.xmpp_message)
+        reply = xmpp_message.reply(message)
         reply.send()
 
 
@@ -54,8 +58,9 @@ class Adapter(thebot.Adapter):
             """
 
             if msg['type'] in ('chat', 'normal'):
-                request = XMPPRequest(msg['body'], msg)
-                self.callback(request)
+                if msg['from'] != msg['to']:
+                    request = XMPPRequest(msg['body'], msg)
+                    self.callback(request)
 
 
         def on_start(event):
