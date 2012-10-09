@@ -121,10 +121,10 @@ def test_help_command():
     adapter.write('help')
     eq_(
         [
-            'I support following commands:\n'
-            '  find (?P<this>.*) — Making a fake search of the term.\n'
-            '  help — Shows a help.\n'
-            '  show me a cat — Shows a cat.'
+            u'I support following commands:\n'
+            u'  find (?P<this>.*) — Making a fake search of the term.\n'
+            u'  help — Shows a help.\n'
+            u'  show me a cat — Shows a cat.'
         ],
         adapter._lines
     )
