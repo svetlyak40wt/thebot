@@ -19,7 +19,7 @@ class XMPPRequest(thebot.Request):
 class Adapter(thebot.Adapter):
     @staticmethod
     def get_options(parser):
-        group = parser.add_argument_group('IRC options')
+        group = parser.add_argument_group('XMPP options')
         group.add_argument(
             '--xmpp-jid', default='thebot@ya.ru',
             help='Jabber JID. Default: thebot@ya.ru.'
