@@ -37,12 +37,27 @@ Then, join this channel and send `thebot, instagram on` message. To list all sup
 `thebot, help`.
 
 
+Available adapters
+------------------
+
+### Builtins
+
+* [irc](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/irc.py);
+* [xmpp](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/xmpp.py);
+* [http](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/http.py);
+* [console](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/console.py);
+
+### External
+
+* Be the first, who will write the one!
+
 Available plugins
 -----------------
 
 ### Builtins
 
 * [image](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/image.py) — uses Google Image and [mustachify.me](http://mustachify.me), to search images and to make them funny.
+* [math](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/math.py) — uses Google Calculator to do some math and convert currencies.
 
 ### External
 
