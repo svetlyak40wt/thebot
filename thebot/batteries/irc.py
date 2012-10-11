@@ -14,6 +14,9 @@ class IRCRequest(thebot.Request):
         self.nick = nick
         self.channel = channel
 
+    def get_user(self):
+        return (self.channel, self.nick)
+
     def respond(self, message):
         message = thebot.utils.force_str(message)
         adapter = self.bot.get_adapter('irc')

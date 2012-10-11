@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import absolute_import
 
+import pickle
 import argparse
 import copy
 import importlib
@@ -143,40 +144,74 @@ class HelpPlugin(Plugin):
         request.respond(u'\n'.join(lines))
 
 
+class Pickler(pickle.Pickler):
+    def __init__(self, file, protocol=None, global_objects=None):
+        pickle.Pickler.__init__(self, file, protocol=protocol)
+        self._global_objects = dict(
+            (id(obj), persistent_id)
+            for persistent_id, obj in (global_objects or {}).items()
+        )
+
+    def persistent_id(self, obj):
+        return self._global_objects.get(id(obj))
+
+
+class Unpickler(pickle.Unpickler):
+    def __init__(self, file, global_objects=None):
+        pickle.Unpickler.__init__(self, file)
+        self._global_objects = global_objects or {}
+
+    def persistent_load(self, obj_id):
+        return self._global_objects[obj_id]
+
+
+class Shelve(shelve.DbfilenameShelf):
+    """A custom Shelve, to use custom Pickler and Unpickler.
+    """
+    def __init__(self, filename, global_objects=None):
+        shelve.DbfilenameShelf.__init__(self, filename)
+        self._global_objects = global_objects or {}
+
+    def __getitem__(self, key):
+        try:
+            value = self.cache[key]
+        except KeyError:
+            f = shelve.StringIO(self.dict[key])
+            value = Unpickler(f, global_objects=self._global_objects).load()
+            if self.writeback:
+                self.cache[key] = value
+        return value
+
+    def __setitem__(self, key, value):
+        if self.writeback:
+            self.cache[key] = value
+        f = shelve.StringIO()
+        p = Pickler(f, self._protocol, global_objects=self._global_objects)
+        p.dump(value)
+        self.dict[key] = f.getvalue()
+
 
 class Storage(object):
-    def __init__(self, filename, prefix='', specials=None):
+    def __init__(self, filename, prefix='', global_objects=None):
         """Specials are used to restore references to some nonserializable objects,
         such as TheBot itself.
         """
         if isinstance(filename, basestring):
-            self._shelve = shelve.open(filename)
+            self._shelve = Shelve(filename, global_objects=global_objects)
         else:
             self._shelve = filename
 
         self.prefix = prefix
-        self.specials = specials or {}
+        self.global_objects = global_objects or {}
 
     def __getitem__(self, name):
-        return self._restore_specials(self._shelve.__getitem__(self.prefix + name))
+        return self._shelve.__getitem__(self.prefix + name)
 
     def get(self, name, default=None):
-        return self._restore_specials(self._shelve.get(self.prefix + name, default))
-
-    def _restore_specials(self, value):
-        for key, obj in self.specials.items():
-            if hasattr(value, key):
-                setattr(value, key, obj)
-        return value
-
+        return self._shelve.get(self.prefix + name, default)
 
     def __setitem__(self, name, value):
-        value_copy = copy.copy(value)
-        for key in self.specials:
-            if hasattr(value_copy, key):
-                setattr(value_copy, key, 'special:' + key)
-
-        return self._shelve.__setitem__(self.prefix + name, value_copy)
+        return self._shelve.__setitem__(self.prefix + name, value)
 
     def __delitem__(self, name):
         return self._shelve.__delitem__(self.prefix + name)
@@ -189,14 +224,14 @@ class Storage(object):
             del self._shelve[key]
 
     def with_prefix(self, prefix):
-        return Storage(self._shelve, prefix=prefix, specials=self.specials)
+        return Storage(self._shelve, prefix=prefix, global_objects=self.global_objects)
 
     def close(self):
         self._shelve.close()
 
 
 class Bot(object):
-    def __init__(self, command_line_args=[], adapters=None, plugins=None):
+    def __init__(self, command_line_args=[], adapters=None, plugins=None, config_dict={}):
         self.adapters = []
         self.plugins = []
         self.patterns = []
@@ -247,8 +282,12 @@ class Bot(object):
                 cls.get_options(parser)
 
         self.config = parser.parse_args(command_line_args)
+        self.config.unittest = False
 
-        self.storage = Storage(self.config.storage_filename, specials=dict(bot=self))
+        for key, value in config_dict.items():
+            setattr(self.config, key, value)
+
+        self.storage = Storage(self.config.storage_filename, global_objects=dict(bot=self))
 
         logging.basicConfig(
             filename=self.config.log_filename,
@@ -328,4 +367,11 @@ class Bot(object):
             if getattr(adapter, 'name', None) == name:
                 return adapter
         raise KeyError(u'Adapter {} not found'.format(name))
+
+    def get_plugin(self, name):
+        """Returns plugin by it's name."""
+        for plugin in self.plugins:
+            if getattr(plugin, 'name', None) == name:
+                return plugin
+        raise KeyError(u'Plugin {} not found'.format(name))
 

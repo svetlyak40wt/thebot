@@ -1,7 +1,41 @@
 # coding: utf-8
 
-from thebot import Bot, Request, Adapter, Plugin, Storage, route
+import times
+import datetime
+import mock
+import copy_reg
+import thebot
+
+from thebot import Request, Adapter, Plugin, Storage, route
+from thebot.batteries import todo
 from nose.tools import eq_, assert_raises
+
+
+class Bot(thebot.Bot):
+    """Test bot which uses slightly different settings."""
+    def __init__(self, *args, **kwargs):
+        kwargs['config_dict'] = dict(
+            unittest=True,
+            log_filename='unittest.log',
+            storage_filename='unittest.storage',
+        )
+        super(Bot, self).__init__(*args, **kwargs)
+
+        self.storage.clear()
+
+
+class TestRequest(Request):
+    def __init__(self, message, bot, user):
+        super(TestRequest, self).__init__(message)
+        self.bot = bot
+        self.user = user
+
+    def respond(self, message):
+        adapter = self.bot.get_adapter('test')
+        adapter._lines.append(message)
+
+    def get_user(self):
+        return self.user
 
 
 class TestAdapter(Adapter):
@@ -11,15 +45,11 @@ class TestAdapter(Adapter):
         super(TestAdapter, self).__init__(*args, **kwargs)
         self._lines = []
 
-    def write(self, input_line):
+    def write(self, input_line, user='some user'):
         """This method is for test purpose.
         """
         lines = self._lines
-        class TestRequest(Request):
-            def respond(self, message):
-                lines.append(message)
-
-        self.callback(TestRequest(input_line))
+        self.callback(TestRequest(input_line, self.bot, user))
 
 
 class TestPlugin(Plugin):
@@ -48,7 +78,7 @@ def test_install_plugins():
 
 def test_one_line():
     bot = Bot(adapters=[TestAdapter], plugins=[TestPlugin])
-    adapter = bot.adapters[0]
+    adapter = bot.get_adapter('test')
 
     eq_(adapter._lines, [])
     adapter.write('show me a cat')
@@ -146,7 +176,7 @@ def test_delete_from_storage():
 def test_storage_restores_bot_attribute():
     bot = Bot(adapters=[TestAdapter], plugins=[TestPlugin])
 
-    storage = Storage('/tmp/thebot.storage', specials=dict(bot=bot))
+    storage = Storage('/tmp/thebot.storage', global_objects=dict(bot=bot))
     storage.clear()
 
     original = Request('blah')
@@ -158,15 +188,120 @@ def test_storage_restores_bot_attribute():
     eq_(restored.bot, original.bot)
 
 
-def test_storage_with_prefix_keeps_specials():
-    storage = Storage('/tmp/thebot.storage', specials=dict(some='value'))
+def test_storage_with_prefix_keeps_global_objects():
+    storage = Storage('/tmp/thebot.storage', global_objects=dict(some='value'))
     prefixed = storage.with_prefix('nested:')
 
-    eq_(storage.specials, prefixed.specials)
+    eq_(storage.global_objects, prefixed.global_objects)
 
 
 def test_get_adapter_by_name():
     bot = Bot(adapters=[TestAdapter])
     adapter = bot.get_adapter('test')
     assert isinstance(adapter, TestAdapter)
+
+
+def test_todo_plugin():
+    bot = Bot(adapters=[TestAdapter], plugins=[todo.Plugin])
+    adapter = bot.get_adapter('test')
+
+    adapter.write('remind at 2012-10-05 to Celebrate my birthday')
+    adapter.write('remind at 2012-12-18 to Celebrate daughter\'s birthday')
+    adapter.write('remind at 2012-09-01 to Write a doc for TheBot')
+    adapter.write('my tasks')
+
+    eq_(
+        [
+            u'ok',
+            u'ok',
+            u'ok',
+            u'16) 2012-09-01 00:00 Write a doc for TheBot\n'
+            u'cd) 2012-10-05 00:00 Celebrate my birthday\n'
+            u'9c) 2012-12-18 00:00 Celebrate daughter\'s birthday',
+        ],
+        adapter._lines
+    )
+
+
+def test_todo_plugin_for_different_users():
+    bot = Bot(adapters=[TestAdapter], plugins=[todo.Plugin])
+    adapter = bot.get_adapter('test')
+
+    adapter.write('remind at 2012-10-05 to Celebrate my birthday', user='blah')
+    adapter.write('remind at 2012-12-18 to Celebrate daughter\'s birthday', user='minor')
+
+    adapter._lines[:] = []
+    adapter.write('my tasks', user='minor')
+
+    eq_(
+        [
+            u'9c) 2012-12-18 00:00 Celebrate daughter\'s birthday',
+        ],
+        adapter._lines
+    )
+
+
+def test_todo_remind():
+    bot = Bot(adapters=[TestAdapter], plugins=[todo.Plugin])
+    adapter = bot.get_adapter('test')
+    plugin = bot.get_plugin('todo')
+
+
+    adapter.write('set my timezone to Asia/Shanghai')
+    # these are the local times
+    adapter.write('remind at 2012-09-05 10:00 to do task1')
+    adapter.write('remind at 2012-09-05 10:30 to do task2')
+
+    with mock.patch.object(times, 'now') as now:
+        # this is a server time in UTC
+        # it is 10:01 at Shanghai (+8 hours)
+        now.return_value = datetime.datetime(2012, 9, 5, 2, 1)
+
+        adapter._lines[:] = []
+        plugin._remind_users_about_their_tasks()
+
+        eq_([u'TODO: do task1 (03f9)'], adapter._lines)
+
+        # but it does not reminds twice
+        now.return_value = datetime.datetime(2012, 9, 5, 2, 12)
+
+        adapter._lines[:] = []
+        plugin._remind_users_about_their_tasks()
+        eq_([], adapter._lines)
+
+
+def test_todo_done():
+    bot = Bot(adapters=[TestAdapter], plugins=[todo.Plugin])
+
+    adapter = bot.get_adapter('test')
+    plugin = bot.get_plugin('todo')
+
+
+    adapter.write('set my timezone to Asia/Shanghai')
+    adapter.write('remind at 2012-09-05 10:00 to do task1')
+    adapter.write('remind at 2012-09-05 10:30 to do task2')
+    adapter.write('03 done')
+
+    adapter._lines[:] = []
+    adapter.write('my tasks')
+
+    eq_(
+        [
+            u'26) 2012-09-05 10:30 do task2',
+        ],
+       adapter._lines
+    )
+
+
+def test_todo_remind_at_uses_timezones():
+    bot = Bot(adapters=[TestAdapter], plugins=[todo.Plugin])
+    adapter = bot.get_adapter('test')
+    plugin = bot.get_plugin('todo')
+
+
+    with mock.patch.object(times, 'now') as now:
+        adapter.write('set my timezone to Asia/Shanghai')
+        adapter.write('remind at 2012-09-05 00:00 to do task1')
+        tasks = plugin._get_tasks('some user')
+        eq_(datetime.datetime(2012, 9, 4, 16, 0), tasks[0][0])
 

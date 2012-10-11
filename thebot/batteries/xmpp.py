@@ -12,13 +12,10 @@ class XMPPRequest(thebot.Request):
         self.bot = bot
         self._from = _from
 
-    def respond(self, message):
-        # we have to copy original message each time, because
-        # `reply` method changes object's content
-        # xmpp_message = copy.copy(self.xmpp_message)
-        # reply = xmpp_message.reply(message)
-        # reply.send()
+    def get_user(self):
+        return self._from
 
+    def respond(self, message):
         msg = sleekxmpp.stanza.message.Message()
         msg['to'] = self._from
         msg['type'] = 'chat'
