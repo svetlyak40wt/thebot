@@ -58,6 +58,7 @@ Available plugins
 
 * [image](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/image.py) — uses Google Image and [mustachify.me](http://mustachify.me), to search images and to make them funny.
 * [math](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/math.py) — uses Google Calculator to do some math and convert currencies.
+* [todo](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/todo.py) — a simple task manager which will store your tasks and send you reminders.
 
 ### External
 
