@@ -13,8 +13,12 @@ class HttpRequest(thebot.Request):
         super(HttpRequest, self).__init__(environ['PATH_INFO'])
         self.environ = environ
         self.start_response = start_response
+        self.response_sent = False
 
     def respond(self, message):
+        if self.response_sent:
+            raise RuntimeError('Response to this HTTP request already sent.')
+
         status = '200 OK'
         headers = [
             ('Server', 'TheBot/' + thebot.__version__),
@@ -23,6 +27,7 @@ class HttpRequest(thebot.Request):
 
         write = self.start_response(status, headers)
         write(message)
+        self.response_sent = True
 
 
 class IRCConnection(irc.IRCConnection):
@@ -62,7 +67,7 @@ class Adapter(thebot.Adapter):
 
         server = make_server(
             self.bot.config.http_host,
-            self.bot.config.http_port,
+            int(self.bot.config.http_port),
             self._wsgi_handler,
             handler_class=QuietHandler,
         )
@@ -74,5 +79,7 @@ class Adapter(thebot.Adapter):
     def _wsgi_handler(self, environ, start_response):
         request = HttpRequest(environ, start_response)
         self.callback(request)
+        if not request.response_sent:
+            request.respond('')
         return []
 
