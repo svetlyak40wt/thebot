@@ -3,5 +3,5 @@ irckit==0.1.1
 requests==0.14.1
 sleekxmpp==1.1.10
 dnspython==1.10.0
-times==0.5
+times==0.6
 pytz==2012f

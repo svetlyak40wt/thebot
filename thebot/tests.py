@@ -3,8 +3,8 @@
 import times
 import datetime
 import mock
-import copy_reg
 import thebot
+import six
 
 from thebot import Request, Adapter, Plugin, Storage, route
 from thebot.batteries import todo
@@ -153,10 +153,11 @@ def test_help_command():
     adapter.write('help')
     eq_(
         [
-            u'I support following commands:\n'
-            u'  find (?P<this>.*) — Making a fake search of the term.\n'
-            u'  help — Shows a help.\n'
-            u'  show me a cat — Shows a cat.'
+            six.u('I support following commands:\n'
+                  '  find (?P<this>.*) — Making a fake search of the term.\n'
+                  '  help — Shows a help.\n'
+                  '  show me a cat — Shows a cat.'
+            )
         ],
         adapter._lines
     )
@@ -212,12 +213,12 @@ def test_todo_plugin():
 
     eq_(
         [
-            u'ok',
-            u'ok',
-            u'ok',
-            u'16) 2012-09-01 00:00 Write a doc for TheBot\n'
-            u'cd) 2012-10-05 00:00 Celebrate my birthday\n'
-            u'9c) 2012-12-18 00:00 Celebrate daughter\'s birthday',
+            'ok',
+            'ok',
+            'ok',
+            '16) 2012-09-01 00:00 Write a doc for TheBot\n'
+            'cd) 2012-10-05 00:00 Celebrate my birthday\n'
+            '9c) 2012-12-18 00:00 Celebrate daughter\'s birthday',
         ],
         adapter._lines
     )
@@ -235,7 +236,7 @@ def test_todo_plugin_for_different_users():
 
     eq_(
         [
-            u'9c) 2012-12-18 00:00 Celebrate daughter\'s birthday',
+            '9c) 2012-12-18 00:00 Celebrate daughter\'s birthday',
         ],
         adapter._lines
     )
@@ -260,7 +261,7 @@ def test_todo_remind():
         adapter._lines[:] = []
         plugin._remind_users_about_their_tasks()
 
-        eq_([u'TODO: do task1 (03f9)'], adapter._lines)
+        eq_(['TODO: do task1 (03f9)'], adapter._lines)
 
         # but it does not reminds twice
         now.return_value = datetime.datetime(2012, 9, 5, 2, 12)
@@ -287,7 +288,7 @@ def test_todo_done():
 
     eq_(
         [
-            u'26) 2012-09-05 10:30 do task2',
+            '26) 2012-09-05 10:30 do task2',
         ],
        adapter._lines
     )

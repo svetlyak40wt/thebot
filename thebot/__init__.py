@@ -10,6 +10,7 @@ import re
 import shelve
 import threading
 import time
+import six
 
 from . import utils
 
@@ -134,14 +135,14 @@ class HelpPlugin(Plugin):
         for pattern, callback in self.bot.patterns:
             docstring = callback.__doc__
             if docstring:
-                lines.append(u'  ' + pattern + u' — ' + docstring)
+                lines.append(six.u('  {} — {}').format(pattern, docstring))
             else:
-                lines.append(u'  ' + pattern)
+                lines.append(six.u('  ') + pattern)
 
         lines.sort()
-        lines.insert(0, u'I support following commands:')
+        lines.insert(0, six.u('I support following commands:'))
 
-        request.respond(u'\n'.join(lines))
+        request.respond(six.u('\n'.join(lines)))
 
 
 class Pickler(pickle.Pickler):
@@ -176,7 +177,7 @@ class Shelve(shelve.DbfilenameShelf):
         try:
             value = self.cache[key]
         except KeyError:
-            f = shelve.StringIO(self.dict[key])
+            f = six.BytesIO(self.dict[key])
             value = Unpickler(f, global_objects=self._global_objects).load()
             if self.writeback:
                 self.cache[key] = value
@@ -185,7 +186,7 @@ class Shelve(shelve.DbfilenameShelf):
     def __setitem__(self, key, value):
         if self.writeback:
             self.cache[key] = value
-        f = shelve.StringIO()
+        f = six.BytesIO()
         p = Pickler(f, self._protocol, global_objects=self._global_objects)
         p.dump(value)
         self.dict[key] = f.getvalue()
@@ -196,10 +197,10 @@ class Storage(object):
         """Specials are used to restore references to some nonserializable objects,
         such as TheBot itself.
         """
-        if isinstance(filename, basestring):
-            self._shelve = Shelve(filename, global_objects=global_objects)
-        else:
+        if isinstance(filename, Shelve):
             self._shelve = filename
+        else:
+            self._shelve = Shelve(filename, global_objects=global_objects)
 
         self.prefix = prefix
         self.global_objects = global_objects or {}
@@ -217,7 +218,7 @@ class Storage(object):
         return self._shelve.__delitem__(self.prefix + name)
 
     def keys(self):
-        return filter(lambda x: x.startswith(self.prefix), self._shelve.keys())
+        return list(filter(lambda x: x.startswith(self.prefix), self._shelve.keys()))
 
     def clear(self):
         for key in self.keys():
@@ -247,7 +248,7 @@ class Bot(object):
 
             If all of them fail, it will raise ImportError
             """
-            if isinstance(value, basestring):
+            if isinstance(value, six.string_types):
                 try:
                     module = importlib.import_module('thebot_' + value)
                 except ImportError:
@@ -261,7 +262,9 @@ class Bot(object):
             return value
 
         parser = Bot.get_general_options()
-        args, unknown = parser.parse_known_args(filter(lambda x: x not in ('--help', '-h'), command_line_args))
+        args, unknown = parser.parse_known_args(
+            list(filter(lambda x: x not in ('--help', '-h'), command_line_args))
+        )
 
         if adapters is None:
             adapter_classes = map(lambda a: load(a, 'Adapter'), args.adapters.split(','))
@@ -270,7 +273,7 @@ class Bot(object):
             adapter_classes = adapters
 
         if plugins is None:
-            plugin_classes = map(lambda a: load(a, 'Plugin'), args.plugins.split(','))
+            plugin_classes = [load(a, 'Plugin') for a in  args.plugins.split(',')]
         else:
             # we've got adapters argument (it is used for testing purpose
             plugin_classes = plugins
@@ -366,12 +369,12 @@ class Bot(object):
         for adapter in self.adapters:
             if getattr(adapter, 'name', None) == name:
                 return adapter
-        raise KeyError(u'Adapter {} not found'.format(name))
+        raise KeyError(six.u('Adapter {} not found').format(name))
 
     def get_plugin(self, name):
         """Returns plugin by it's name."""
         for plugin in self.plugins:
             if getattr(plugin, 'name', None) == name:
                 return plugin
-        raise KeyError(u'Plugin {} not found'.format(name))
+        raise KeyError(six.u('Plugin {} not found').format(name))
 
