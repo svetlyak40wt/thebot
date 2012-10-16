@@ -5,3 +5,4 @@ sleekxmpp==1.1.10
 dnspython==1.10.0
 times==0.5
 pytz==2012f
+six==1.2.0
