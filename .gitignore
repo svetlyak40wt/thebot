@@ -5,4 +5,5 @@
 /thebot.egg-info/
 /thebot.log
 /.vim/ide.session
-/*.storage.db
+/*.storage*
+/.tox

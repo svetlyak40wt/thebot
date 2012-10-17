@@ -4,6 +4,7 @@ import thebot
 import bisect
 import times
 import hashlib
+import six
 
 from dateutil.parser import parse
 from collections import defaultdict
@@ -17,7 +18,7 @@ def _gen_hashes(tasks):
         return [], 0
 
     shas = [
-        hashlib.sha1(about).hexdigest()
+        hashlib.sha1(about.encode('utf-8')).hexdigest()
         for dt, about, r in tasks
     ]
     for min_len in range(2, len(shas[0]) + 1):
@@ -47,7 +48,7 @@ class Plugin(thebot.ThreadedPlugin):
         all_tasks[user] = tasks
         self.storage['tasks'] = all_tasks
 
-    @thebot.route(u'remind( me)? at (?P<datetime>.+) to (?P<about>.+)')
+    @thebot.route(six.u('remind( me)? at (?P<datetime>.+) to (?P<about>.+)'))
     def remind(self, request, datetime, about):
         """Remind about a TODO at given time."""
 
@@ -60,13 +61,13 @@ class Plugin(thebot.ThreadedPlugin):
             tasks = self._get_tasks(user)
             bisect.insort(tasks, (dt, about, request))
             self._set_tasks(user, tasks)
-        except Exception, e:
-            request.respond(u'Unable to parse a date: ' + unicode(e))
+        except Exception as e:
+            request.respond(six.u('Unable to parse a date: ') + six.text_type(e))
             raise
 
-        request.respond(u'ok')
+        request.respond(six.u('ok'))
 
-    @thebot.route(u'my tasks')
+    @thebot.route(six.u('my tasks'))
     def my_tasks(self, request):
         """Show my tasks"""
         user = request.get_user()
@@ -79,11 +80,11 @@ class Plugin(thebot.ThreadedPlugin):
             lines = []
             for h, (dt, about, request) in zip(hashes, tasks):
                 dt = times.to_local(dt, tz)
-                lines.append(u'{0}) {1:%Y-%m-%d %H:%M} {2}'.format(h[:min_len], dt, about))
+                lines.append(six.u('{0}) {1:%Y-%m-%d %H:%M} {2}').format(h[:min_len], dt, about))
 
-            request.respond(u'\n'.join(lines))
+            request.respond(six.u('\n').join(lines))
         else:
-            request.respond(u'You have no tasks')
+            request.respond(six.u('You have no tasks'))
 
     @thebot.route('(?P<task_id>[0-9a-z]{2,40}) done')
     def done(self, request, task_id):
@@ -113,15 +114,15 @@ class Plugin(thebot.ThreadedPlugin):
                 if delta.seconds <= self.interval:
                     # Remind only if reminder's datetime is between
                     # this and previous checks
-                    request.respond(u'TODO: {0} ({1})'.format(
+                    request.respond(six.u('TODO: {0} ({1})').format(
                         about,
-                        hashlib.sha1(about).hexdigest()[:4]
+                        hashlib.sha1(about.encode('utf-8')).hexdigest()[:4]
                     ))
 
     def do_job(self):
         self._remind_users_about_their_tasks()
 
-    @thebot.route(u'set my timezone to (?P<timezone>.+/.+)')
+    @thebot.route(six.u('set my timezone to (?P<timezone>.+/.+)'))
     def set_timezone(self, request, timezone):
         """Set you timezone"""
         timezones = self.storage.get('timezones', {})
@@ -135,7 +136,7 @@ class Plugin(thebot.ThreadedPlugin):
         return timezones.get(user, 'UTC')
 
 
-    @thebot.route(u'now')
+    @thebot.route(six.u('now'))
     def now(self, request):
         """Outputs server time and user time."""
 
@@ -144,4 +145,4 @@ class Plugin(thebot.ThreadedPlugin):
         tz = self._get_user_timezone(user)
         local = times.to_local(now, tz)
 
-        request.respond(u'Server time: {}\nLocal time:{}'.format(now, local))
+        request.respond(six.u('Server time: {}\nLocal time:{}').format(now, local))

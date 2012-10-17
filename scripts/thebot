@@ -5,15 +5,15 @@ import thebot
 import sys
 
 from time import sleep
+from contexlib import closing
 
 def main():
-    bot = thebot.Bot(sys.argv[1:])
-    try:
-        while not bot.exiting:
-            sleep(1)
-    except KeyboardInterrupt:
-        pass
-    bot.close()
+    with closing(thebot.Bot(sys.argv[1:])) as bot:
+        try:
+            while not bot.exiting:
+                sleep(1)
+        except KeyboardInterrupt:
+            pass
 
 
 if __name__ == '__main__':
