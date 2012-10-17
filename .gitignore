@@ -1,7 +1,9 @@
 .*.swp
 *.pyc
 /env
+/env3
 /thebot.egg-info/
 /thebot.log
 /.vim/ide.session
-/thebot.storage.db
+/*.storage*
+/.tox

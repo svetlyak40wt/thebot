@@ -1,10 +1,8 @@
 from setuptools import setup, find_packages
 
-import thebot
-
 setup(
     name='thebot',
-    version=thebot.__version__,
+    version='0.1.0',
     description=(
     ),
     keywords='chat irc xmpp basecamp jira fun',
@@ -19,6 +17,7 @@ setup(
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
     ],
     packages=find_packages(),
     scripts=['scripts/thebot'],
