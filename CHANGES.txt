@@ -1,0 +1,9 @@
+0.1.1
+-----
+
+* Port to Python3.
+
+0.1.0
+-----
+
+Initial version with basic adapters and plugins.
