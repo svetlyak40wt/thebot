@@ -11,10 +11,12 @@ import shelve
 import threading
 import time
 import six
+import pkg_resources
 
 from . import utils
 
-__version__ = '0.1.0'
+__version__ = pkg_resources.get_distribution(__name__).version
+
 
 # pass this object to callback, to terminate the bot
 EXIT = object()
