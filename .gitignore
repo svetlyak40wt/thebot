@@ -7,3 +7,4 @@
 /.vim/ide.session
 /*.storage*
 /.tox
+/dist
