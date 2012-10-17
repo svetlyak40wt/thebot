@@ -3,7 +3,6 @@ from __future__ import absolute_import
 
 import pickle
 import argparse
-import copy
 import importlib
 import logging
 import re
@@ -144,7 +143,7 @@ class HelpPlugin(Plugin):
         lines.sort()
         lines.insert(0, six.u('I support following commands:'))
 
-        request.respond(six.u('\n'.join(lines)))
+        request.respond(six.u('\n').join(lines))
 
 
 class Pickler(pickle.Pickler):
