@@ -5,7 +5,7 @@ import thebot
 import sys
 
 from time import sleep
-from contexlib import closing
+from contextlib import closing
 
 def main():
     with closing(thebot.Bot(sys.argv[1:])) as bot:
