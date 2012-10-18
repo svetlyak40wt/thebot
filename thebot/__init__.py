@@ -275,7 +275,7 @@ class Config(object):
                 self._data[key] = value
 
     def __repr__(self):
-        return u'Config: {}'.format(self._data)
+        return 'Config: {}'.format(self._data)
 
     def __getattr__(self, name):
         return self._data[name]
