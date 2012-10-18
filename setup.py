@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='thebot',
-    version='0.1.1',
+    version='0.1.2',
     description=(
     ),
     keywords='chat irc xmpp basecamp jira fun',
