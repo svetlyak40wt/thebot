@@ -1,0 +1,12 @@
+adapters: [xmpp, irc]
+
+xmpp:
+    jid: thebot@ya.ru
+    password: some-password
+
+irc:
+    host: irc.freenode.net
+    channels: test-channel
+
+verbose: yes
+

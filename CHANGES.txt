@@ -1,3 +1,8 @@
+0.1.2
+-----
+
+* Now all options can be specified in YAML config 'thebot.conf'.
+
 0.1.1
 -----
 

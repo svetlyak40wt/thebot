@@ -7,7 +7,7 @@ import thebot
 import six
 import sys
 
-from thebot import Request, Adapter, Plugin, Storage, route
+from thebot import Request, Adapter, Plugin, Storage, route, Config
 from thebot.batteries import todo
 from nose.tools import eq_, assert_raises
 from contextlib import closing
@@ -304,4 +304,18 @@ def test_todo_remind_at_uses_timezones():
         adapter.write('remind at 2012-09-05 00:00 to do task1')
         tasks = plugin._get_tasks('some user')
         eq_(datetime.datetime(2012, 9, 4, 16, 0), tasks[0][0])
+
+
+def test_yaml_config():
+    cfg = Config()
+    cfg.read_from_string("""
+adapters: [xmpp, irc]
+irc:
+    channels: [thebot, test]
+xmpp:
+    jid: thebot@ya.ru
+""")
+
+    eq_(['xmpp', 'irc'], cfg.adapters)
+    eq_('thebot@ya.ru', cfg.xmpp_jid)
 

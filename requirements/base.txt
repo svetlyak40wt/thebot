@@ -6,3 +6,4 @@ dnspython==1.10.0
 times==0.6
 pytz==2012f
 six==1.2.0
+PyYAML==3.10

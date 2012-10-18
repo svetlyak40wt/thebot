@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import copy
 import sleekxmpp
 import thebot
 import threading
@@ -39,7 +38,7 @@ class Adapter(thebot.Adapter):
         )
         group.add_argument(
             '--xmpp-password', default='',
-            help='Password to connect to the server. Default: ''.'
+            help='Password to connect to the server. Default: "".'
         )
 
     def start(self):
