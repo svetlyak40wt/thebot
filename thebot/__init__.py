@@ -13,6 +13,7 @@ import six
 import threading
 import time
 import yaml
+import UserDict
 
 from . import utils
 
@@ -195,7 +196,7 @@ class Shelve(shelve.DbfilenameShelf):
         self.dict[key] = f.getvalue()
 
 
-class Storage(object):
+class Storage(UserDict.DictMixin):
     def __init__(self, filename, prefix='', global_objects=None):
         """Specials are used to restore references to some nonserializable objects,
         such as TheBot itself.
@@ -211,9 +212,6 @@ class Storage(object):
     def __getitem__(self, name):
         return self._shelve.__getitem__(self.prefix + name)
 
-    def get(self, name, default=None):
-        return self._shelve.get(self.prefix + name, default)
-
     def __setitem__(self, name, value):
         return self._shelve.__setitem__(self.prefix + name, value)
 
@@ -221,14 +219,19 @@ class Storage(object):
         return self._shelve.__delitem__(self.prefix + name)
 
     def keys(self):
-        return list(filter(lambda x: x.startswith(self.prefix), self._shelve.keys()))
+        prefix_len = len(self.prefix)
+        return [
+            key[prefix_len:]
+            for key in self._shelve.keys()
+                if key.startswith(self.prefix)
+        ]
 
     def clear(self):
         for key in self.keys():
-            del self._shelve[key]
+            del self._shelve[self.prefix + key]
 
     def with_prefix(self, prefix):
-        return Storage(self._shelve, prefix=prefix, global_objects=self.global_objects)
+        return Storage(self._shelve, prefix=self.prefix + prefix, global_objects=self.global_objects)
 
     def close(self):
         self._shelve.close()

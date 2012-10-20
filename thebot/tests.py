@@ -138,14 +138,27 @@ def test_storage_nesting():
     second['one'] = {'some': 'dict'}
 
     eq_(['first:blah', 'second:one'], sorted(storage.keys()))
-    eq_(['first:blah'], sorted(first.keys()))
-    eq_(['second:one'], sorted(second.keys()))
+    eq_(['blah'], sorted(first.keys()))
+    eq_(['one'], sorted(second.keys()))
 
     eq_('minor', first['blah'])
     assert_raises(KeyError, lambda: second['blah'])
 
     first.clear()
     eq_(['second:one'], sorted(storage.keys()))
+
+def test_storage_deep_nesting():
+    storage = Storage('/tmp/thebot.storage')
+    storage.clear()
+
+    first = storage.with_prefix('first:')
+    second = first.with_prefix('second:')
+
+    second['blah'] = 'minor'
+
+    eq_(['first:second:blah'], storage.keys())
+    eq_(['second:blah'], first.keys())
+    eq_(['blah'], second.keys())
 
 
 def test_help_command():
@@ -173,6 +186,23 @@ def test_delete_from_storage():
     del storage['blah']
 
     eq_([], sorted(storage.keys()))
+
+
+def test_storage_is_iterable_as_dict():
+    storage = Storage('/tmp/thebot.storage')
+    storage.clear()
+
+    storage['blah'] = 'minor'
+    storage['another'] = 'option'
+
+    eq_(['another', 'blah'], sorted(storage.keys()))
+    eq_(['minor', 'option'], sorted(storage.values()))
+    eq_([('another', 'option'), ('blah', 'minor')], sorted(storage.items()))
+
+    eq_(
+        ['another', 'blah'],
+        sorted(item for item in storage)
+    )
 
 
 
