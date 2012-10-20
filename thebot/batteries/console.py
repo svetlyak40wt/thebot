@@ -8,6 +8,9 @@ class ConsoleRequest(thebot.Request):
         sys.stdout.write('{0}\n'.format(thebot.utils.force_str(message)))
         sys.stdout.flush()
 
+    def get_user(self):
+        return 'local'
+
 
 class Adapter(thebot.Adapter):
     def start(self):
