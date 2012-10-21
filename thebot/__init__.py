@@ -13,7 +13,12 @@ import six
 import threading
 import time
 import yaml
-import UserDict
+
+try:
+    from collections import MutableMapping
+except ImportError:
+    from UserDict import DictMixin as MutableMapping
+
 
 from . import utils
 
@@ -196,7 +201,7 @@ class Shelve(shelve.DbfilenameShelf):
         self.dict[key] = f.getvalue()
 
 
-class Storage(UserDict.DictMixin):
+class Storage(MutableMapping):
     def __init__(self, filename, prefix='', global_objects=None):
         """Specials are used to restore references to some nonserializable objects,
         such as TheBot itself.
@@ -217,6 +222,12 @@ class Storage(UserDict.DictMixin):
 
     def __delitem__(self, name):
         return self._shelve.__delitem__(self.prefix + name)
+
+    def __len__(self):
+        return len(self._shelve)
+
+    def __iter__(self):
+        return iter(self._shelve)
 
     def keys(self):
         prefix_len = len(self.prefix)
