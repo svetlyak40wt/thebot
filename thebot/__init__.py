@@ -296,7 +296,15 @@ class Config(object):
 
 
 class Bot(object):
-    def __init__(self, command_line_args=[], adapters=None, plugins=None, config_dict={}):
+    def __init__(
+            self,
+            command_line_args=[],
+            adapters=None,
+            plugins=None,
+            config_dict={},
+            config_filename='thebot.conf',
+        ):
+
         self.adapters = []
         self.plugins = []
         self.patterns = []
@@ -325,8 +333,6 @@ class Bot(object):
 
             return value
 
-
-        config_filename = 'thebot.conf'
 
         default_config = """
             unittest: no

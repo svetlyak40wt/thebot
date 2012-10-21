@@ -22,6 +22,7 @@ class Bot(thebot.Bot):
             log_filename='unittest.log',
             storage_filename='unittest-{}.storage'.format(python_version),
         )
+        kwargs['config_filename'] = 'unexistent.conf'
         super(Bot, self).__init__(*args, **kwargs)
 
         self.storage.clear()
