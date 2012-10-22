@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import re
 import irc
@@ -76,16 +76,16 @@ class Adapter(thebot.Adapter):
             It verifies if a bot's nick is mentioned, and pass data to TheBot.
             """
             message = thebot.utils.force_unicode(message)
-            nick_re = re.compile(u'^%s[:,\s]\s*' % conn.nick)
+            nick_re = re.compile('^%s[:,\s]\s*' % conn.nick)
 
             if nick_re.match(message) is not None:
-                message = nick_re.sub(u'', message)
+                message = nick_re.sub('', message)
                 request = IRCRequest(message, self.bot, nick, channel)
                 return self.callback(request)
 
         conn = IRCConnection(host, port, nick)
         conn.register_callbacks((
-            (re.compile(u'.*'), on_message),
+            (re.compile('.*'), on_message),
         ))
 
         self.irc_connection = conn

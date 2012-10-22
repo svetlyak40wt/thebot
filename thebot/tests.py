@@ -1,10 +1,11 @@
 # coding: utf-8
 
+from __future__ import absolute_import, unicode_literals
+
 import times
 import datetime
 import mock
 import thebot
-import six
 import sys
 
 from thebot import Request, Adapter, Plugin, Storage, route, Config
@@ -169,11 +170,10 @@ def test_help_command():
         adapter.write('help')
         eq_(
             [
-                six.u('I support following commands:\n'
-                      '  find (?P<this>.*) — Making a fake search of the term.\n'
-                      '  help — Shows a help.\n'
-                      '  show me a cat — Shows a cat.'
-                )
+                'I support following commands:\n'
+                '  find (?P<this>.*) — Making a fake search of the term.\n'
+                '  help — Shows a help.\n'
+                '  show me a cat — Shows a cat.'
             ],
             adapter._lines
         )

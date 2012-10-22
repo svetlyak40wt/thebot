@@ -1,5 +1,5 @@
 # coding: utf-8
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import argparse
 import importlib
@@ -142,16 +142,16 @@ class HelpPlugin(Plugin):
         """Shows a help."""
         lines = []
         for pattern, callback in self.bot.patterns:
-            docstring = callback.__doc__
+            docstring = utils.force_unicode(callback.__doc__)
             if docstring:
-                lines.append(six.u('  {} — {}').format(pattern, docstring))
+                lines.append('  {} — {}'.format(pattern, docstring))
             else:
-                lines.append(six.u('  ') + pattern)
+                lines.append('  ' + pattern)
 
         lines.sort()
-        lines.insert(0, six.u('I support following commands:'))
+        lines.insert(0, 'I support following commands:')
 
-        request.respond(six.u('\n').join(lines))
+        request.respond('\n'.join(lines))
 
 
 class Pickler(pickle.Pickler):
@@ -488,12 +488,12 @@ class Bot(object):
         for adapter in self.adapters:
             if getattr(adapter, 'name', None) == name:
                 return adapter
-        raise KeyError(six.u('Adapter {} not found').format(name))
+        raise KeyError('Adapter {} not found'.format(name))
 
     def get_plugin(self, name):
         """Returns plugin by it's name."""
         for plugin in self.plugins:
             if getattr(plugin, 'name', None) == name:
                 return plugin
-        raise KeyError(six.u('Plugin {} not found').format(name))
+        raise KeyError('Plugin {} not found'.format(name))
 
