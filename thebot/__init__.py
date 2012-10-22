@@ -125,15 +125,39 @@ class ThreadedPlugin(Plugin):
             on_stop()
 
 
-def route(pattern):
-    """Decorator to assign routes to plugin's methods.
-    """
-    def deco(func):
-        if getattr(func, '_patterns', None) is None:
-            func._patterns = []
-        func._patterns.append(pattern)
-        return func
-    return deco
+class HearPattern(object):
+    def __init__(self, pattern):
+        self.pattern = pattern
+        self._re = re.compile('.*' + pattern + '.*')
+
+    def match(self, message):
+        return self._re.match(message)
+
+
+class RespondPattern(object):
+    def __init__(self, pattern):
+        self.pattern = pattern
+        self._re = re.compile('^' + pattern + '$')
+
+    def match(self, message):
+        return self._re.match(message)
+
+
+def _make_routing_decorator(pattern_cls):
+    def decorator(pattern):
+        """Decorator to assign routes to plugin's methods.
+        """
+        def deco(func):
+            if getattr(func, '_patterns', None) is None:
+                func._patterns = []
+            func._patterns.append(pattern_cls(pattern))
+            return func
+        return deco
+    return decorator
+
+
+hear = _make_routing_decorator(HearPattern)
+respond = route = _make_routing_decorator(RespondPattern)
 
 
 class HelpPlugin(Plugin):
@@ -429,12 +453,6 @@ class Bot(object):
             self.plugins.append(p)
             self.patterns.extend(p.get_callbacks())
 
-        self.patterns = [
-            (utils.force_unicode(pattern), callback)
-            for pattern, callback in self.patterns
-        ]
-
-
     @staticmethod
     def get_general_options():
         parser = argparse.ArgumentParser(
@@ -469,7 +487,7 @@ class Bot(object):
             self.exiting = True
         else:
             for pattern, callback in self.patterns:
-                match = re.match(pattern, request.message)
+                match = pattern.match(request.message)
                 if match is not None:
                     result = callback(request, **match.groupdict())
                     if result is not None:

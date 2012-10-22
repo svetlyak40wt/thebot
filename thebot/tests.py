@@ -8,7 +8,7 @@ import mock
 import thebot
 import sys
 
-from thebot import Request, Adapter, Plugin, Storage, route, Config
+from thebot import Request, Adapter, Plugin, Storage, route, Config, hear, respond
 from thebot.batteries import todo
 from nose.tools import eq_, assert_raises
 from contextlib import closing
@@ -57,12 +57,12 @@ class TestAdapter(Adapter):
 
 
 class TestPlugin(Plugin):
-    @route('show me a cat')
-    def show_a_cat(self, request):
-        """Shows a cat."""
-        request.respond('the Cat')
+    @hear('cat')
+    def i_like_cats(self, request):
+        """Shows how TheBot likes cats."""
+        request.respond('I like cats!!!')
 
-    @route('find (?P<this>.*)')
+    @respond('find (?P<this>.*)')
     def find(self, request, this=None):
         """Making a fake search of the term."""
         request.respond('I found {0}'.format(this))
@@ -85,10 +85,10 @@ def test_one_line():
         adapter = bot.get_adapter('test')
 
         eq_(adapter._lines, [])
-        adapter.write('show me a cat')
-        eq_(adapter._lines, ['the Cat'])
+        adapter.write('I have a cat')
+        eq_(adapter._lines, ['I like cats!!!'])
 
-        adapter.write('find Umputun')
+        adapter.write('TheBot, find Umputun')
         eq_(adapter._lines[-1], 'I found Umputun')
 
 
@@ -179,7 +179,8 @@ def test_help_command():
                 'I support following commands:\n'
                 '  find (?P<this>.*) — Making a fake search of the term.\n'
                 '  help — Shows a help.\n'
-                '  show me a cat — Shows a cat.'
+                'And react on following patterns:\n'
+                '  cat — Shows how TheBot likes cats.'
             ],
             adapter._lines
         )
