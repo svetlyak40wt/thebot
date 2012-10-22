@@ -183,6 +183,8 @@ class Shelve(shelve.DbfilenameShelf):
         self._global_objects = global_objects or {}
 
     def __getitem__(self, key):
+        key = utils.force_str(key)
+
         try:
             value = self.cache[key]
         except KeyError:
@@ -193,12 +195,15 @@ class Shelve(shelve.DbfilenameShelf):
         return value
 
     def __setitem__(self, key, value):
+        key = utils.force_str(key)
+
         if self.writeback:
             self.cache[key] = value
         f = six.BytesIO()
         p = Pickler(f, self._protocol, global_objects=self._global_objects)
         p.dump(value)
-        self.dict[key] = f.getvalue()
+        value = f.getvalue()
+        self.dict[key] = value
 
 
 class Storage(MutableMapping):
