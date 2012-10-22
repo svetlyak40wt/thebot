@@ -224,18 +224,18 @@ class Storage(MutableMapping):
         return self._shelve.__delitem__(self.prefix + name)
 
     def __len__(self):
-        return len(self._shelve)
+        return sum(1 for key in self)
 
     def __iter__(self):
-        return iter(self._shelve)
-
-    def keys(self):
         prefix_len = len(self.prefix)
-        return [
+        return (
             key[prefix_len:]
             for key in self._shelve.keys()
                 if key.startswith(self.prefix)
-        ]
+        )
+
+    def keys(self):
+        return list(self)
 
     def clear(self):
         for key in self.keys():

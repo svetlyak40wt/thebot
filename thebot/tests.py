@@ -140,14 +140,20 @@ def test_storage_nesting():
     second['one'] = {'some': 'dict'}
 
     eq_(['first:blah', 'second:one'], sorted(storage.keys()))
-    eq_(['blah'], sorted(first.keys()))
-    eq_(['one'], sorted(second.keys()))
+    eq_(['first:blah', 'second:one'], sorted(list(storage)))
+
+    eq_(['blah'], first.keys())
+    eq_(['blah'], list(first))
+
+    eq_(['one'], second.keys())
+    eq_(['one'], list(second))
 
     eq_('minor', first['blah'])
     assert_raises(KeyError, lambda: second['blah'])
 
     first.clear()
     eq_(['second:one'], sorted(storage.keys()))
+    eq_(['second:one'], sorted(list(storage)))
 
 def test_storage_deep_nesting():
     storage = Storage('/tmp/thebot.storage')
