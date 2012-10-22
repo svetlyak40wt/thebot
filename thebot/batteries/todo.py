@@ -105,7 +105,7 @@ class Plugin(thebot.ThreadedPlugin):
 
     def _remind_users_about_their_tasks(self):
         now = times.now()
-        for todos in self.storage['tasks'].values():
+        for todos in self.storage.get('tasks', {}).values():
             idx = bisect.bisect_left(todos, (now, None, None))
             to_remind = todos[:idx]
 
