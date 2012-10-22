@@ -183,8 +183,6 @@ class Shelve(shelve.DbfilenameShelf):
         self._global_objects = global_objects or {}
 
     def __getitem__(self, key):
-        key = utils.force_str(key)
-
         try:
             value = self.cache[key]
         except KeyError:
@@ -195,8 +193,6 @@ class Shelve(shelve.DbfilenameShelf):
         return value
 
     def __setitem__(self, key, value):
-        key = utils.force_str(key)
-
         if self.writeback:
             self.cache[key] = value
         f = six.BytesIO()
@@ -220,13 +216,13 @@ class Storage(MutableMapping):
         self.global_objects = global_objects or {}
 
     def __getitem__(self, name):
-        return self._shelve.__getitem__(self.prefix + name)
+        return self._shelve.__getitem__(utils.force_str(self.prefix + name))
 
     def __setitem__(self, name, value):
-        return self._shelve.__setitem__(self.prefix + name, value)
+        return self._shelve.__setitem__(utils.force_str(self.prefix + name), value)
 
     def __delitem__(self, name):
-        return self._shelve.__delitem__(self.prefix + name)
+        return self._shelve.__delitem__(utils.force_str(self.prefix + name))
 
     def __len__(self):
         return sum(1 for key in self)
@@ -244,7 +240,7 @@ class Storage(MutableMapping):
 
     def clear(self):
         for key in self.keys():
-            del self._shelve[self.prefix + key]
+            del self[key]
 
     def with_prefix(self, prefix):
         return Storage(self._shelve, prefix=self.prefix + prefix, global_objects=self.global_objects)
