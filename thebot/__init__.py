@@ -60,6 +60,7 @@ class Plugin(object):
             if callable(value):
                 patterns = getattr(value, '_patterns', [])
                 for pattern in patterns:
+                    pattern.plugin_name = self.name
                     yield (pattern, value)
 
 
@@ -125,22 +126,29 @@ class ThreadedPlugin(Plugin):
             on_stop()
 
 
-class HearPattern(object):
+class Pattern(object):
     def __init__(self, pattern):
         self.pattern = pattern
-        self._re = re.compile('.*' + pattern + '.*')
+        self._re = None
+
+    def __unicode__(self):
+        return self.pattern
 
     def match(self, message):
-        return self._re.match(message)
+        if self._re is not None:
+            return self._re.match(message)
 
 
-class RespondPattern(object):
+class HearPattern(Pattern):
     def __init__(self, pattern):
-        self.pattern = pattern
+        super(HearPattern, self).__init__(pattern)
+        self._re = re.compile('.*' + self.pattern + '.*')
+
+
+class RespondPattern(Pattern):
+    def __init__(self, pattern):
+        super(RespondPattern, self).__init__(pattern)
         self._re = re.compile('^' + pattern + '$')
-
-    def match(self, message):
-        return self._re.match(message)
 
 
 def _make_routing_decorator(pattern_cls):
@@ -157,23 +165,50 @@ def _make_routing_decorator(pattern_cls):
 
 
 hear = _make_routing_decorator(HearPattern)
-respond = route = _make_routing_decorator(RespondPattern)
+respond = _make_routing_decorator(RespondPattern)
 
 
 class HelpPlugin(Plugin):
-    @route('help')
+    name = 'help'
+
+    @respond('help')
     def help(self, request):
         """Shows a help."""
         lines = []
-        for pattern, callback in self.bot.patterns:
-            docstring = utils.force_unicode(callback.__doc__)
-            if docstring:
-                lines.append('  {} — {}'.format(pattern, docstring))
-            else:
-                lines.append('  ' + pattern)
+        commands = []
+        reactions = []
 
-        lines.sort()
-        lines.insert(0, 'I support following commands:')
+        for pattern, callback in self.bot.patterns:
+            if isinstance(pattern, HearPattern):
+                reactions.append((pattern, callback))
+            else:
+                commands.append((pattern, callback))
+
+        def gen_docs(pattern_list):
+            current_plugin = None
+            previous_callback = None
+
+            for pattern, callback in pattern_list:
+                if current_plugin != pattern.plugin_name:
+                    current_plugin = pattern.plugin_name
+                    lines.append('  Plugin \'{}\':'.format(current_plugin))
+
+                docstring = utils.force_unicode(callback.__doc__)
+                if not docstring:
+                    docstring = 'No description'
+
+                if previous_callback != callback:
+                    lines.append('    {} — {}'.format(pattern.pattern, docstring))
+                else:
+                    lines.append('    ' + pattern.pattern)
+
+                previous_callback = callback
+
+        lines.append('I support following commands:')
+        gen_docs(commands)
+        lines.append('')
+        lines.append('And react on following patterns:')
+        gen_docs(reactions)
 
         request.respond('\n'.join(lines))
 
@@ -451,7 +486,8 @@ class Bot(object):
         for plugin_cls in plugin_classes:
             p = plugin_cls(self)
             self.plugins.append(p)
-            self.patterns.extend(p.get_callbacks())
+            callbacks = p.get_callbacks()
+            self.patterns.extend(callbacks)
 
     @staticmethod
     def get_general_options():

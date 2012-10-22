@@ -7,7 +7,7 @@ import thebot
 
 
 class Plugin(thebot.Plugin):
-    @thebot.route('(calc|calculate|convert|math)( me)? (?P<expression>.+)')
+    @thebot.respond('(calc|calculate|convert|math)( me)? (?P<expression>.+)')
     def math(self, request, expression):
         """Use Google's calculator to do some math."""
         response = requests.get(

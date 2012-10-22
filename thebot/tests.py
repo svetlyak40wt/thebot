@@ -8,7 +8,7 @@ import mock
 import thebot
 import sys
 
-from thebot import Request, Adapter, Plugin, Storage, route, Config, hear, respond
+from thebot import Request, Adapter, Plugin, Storage, Config, hear, respond
 from thebot.batteries import todo
 from nose.tools import eq_, assert_raises
 from contextlib import closing
@@ -57,11 +57,13 @@ class TestAdapter(Adapter):
 
 
 class TestPlugin(Plugin):
+    name = 'test'
     @hear('cat')
     def i_like_cats(self, request):
         """Shows how TheBot likes cats."""
         request.respond('I like cats!!!')
 
+    @respond('search (?P<this>.*)')
     @respond('find (?P<this>.*)')
     def find(self, request, this=None):
         """Making a fake search of the term."""
@@ -77,7 +79,7 @@ def test_install_plugins():
     with closing(Bot(adapters=[], plugins=[TestPlugin])) as bot:
         eq_(0, len(bot.adapters))
         eq_(2, len(bot.plugins)) # Help plugin is added by default
-        eq_(3, len(bot.patterns))
+        eq_(4, len(bot.patterns))
 
 
 def test_one_line():
@@ -88,7 +90,7 @@ def test_one_line():
         adapter.write('I have a cat')
         eq_(adapter._lines, ['I like cats!!!'])
 
-        adapter.write('TheBot, find Umputun')
+        adapter.write('find Umputun')
         eq_(adapter._lines[-1], 'I found Umputun')
 
 
@@ -103,7 +105,8 @@ def test_unknown_command():
 
 def test_exception_raised_if_plugin_returns_not_none():
     class BadPlugin(Plugin):
-        @route('^do$')
+        name = 'bad'
+        @respond('do')
         def do(self, request):
             return 'Hello world'
 
@@ -177,10 +180,15 @@ def test_help_command():
         eq_(
             [
                 'I support following commands:\n'
-                '  find (?P<this>.*) — Making a fake search of the term.\n'
-                '  help — Shows a help.\n'
+                '  Plugin \'test\':\n'
+                '    find (?P<this>.*) — Making a fake search of the term.\n'
+                '    search (?P<this>.*)\n'
+                '  Plugin \'help\':\n'
+                '    help — Shows a help.\n'
+                '\n'
                 'And react on following patterns:\n'
-                '  cat — Shows how TheBot likes cats.'
+                '  Plugin \'test\':\n'
+                '    cat — Shows how TheBot likes cats.'
             ],
             adapter._lines
         )

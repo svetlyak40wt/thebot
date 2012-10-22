@@ -8,7 +8,7 @@ import thebot
 
 
 class Plugin(thebot.Plugin):
-    @thebot.route('(image|img)( me)? (?P<query>.+)')
+    @thebot.respond('(image|img)( me)? (?P<query>.+)')
     def image(self, request, query):
         """Google random image on given topic."""
         url = self._find_image(query)
@@ -17,8 +17,8 @@ class Plugin(thebot.Plugin):
         else:
             request.respond(url)
 
-    @thebot.route('(?:mo?u)?sta(?:s|c)he?(?: for)? (?P<query>.+)')
-    @thebot.route('усы для (?P<query>.+)')
+    @thebot.respond('moustache( for)? (?P<query>.+)')
+    @thebot.respond('усы для (?P<query>.+)')
     def mustache(self, request, query):
         """Apply moustache on image URL or random image on given topic."""
         type = int(random.randint(0, 2))

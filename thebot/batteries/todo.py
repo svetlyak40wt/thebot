@@ -49,7 +49,7 @@ class Plugin(thebot.ThreadedPlugin):
         all_tasks[user] = tasks
         self.storage['tasks'] = all_tasks
 
-    @thebot.route('remind( me)? at (?P<datetime>.+) to (?P<about>.+)')
+    @thebot.respond('remind( me)? at (?P<datetime>.+) to (?P<about>.+)')
     def remind(self, request, datetime, about):
         """Remind about a TODO at given time."""
 
@@ -68,7 +68,7 @@ class Plugin(thebot.ThreadedPlugin):
 
         request.respond('ok')
 
-    @thebot.route('my tasks')
+    @thebot.respond('my tasks')
     def my_tasks(self, request):
         """Show my tasks"""
         user = request.get_user()
@@ -87,7 +87,7 @@ class Plugin(thebot.ThreadedPlugin):
         else:
             request.respond('You have no tasks')
 
-    @thebot.route('(?P<task_id>[0-9a-z]{2,40}) done')
+    @thebot.respond('(?P<task_id>[0-9a-z]{2,40}) done')
     def done(self, request, task_id):
         # TODO add unittests for two cases:
         # * when task_id not found
@@ -123,7 +123,7 @@ class Plugin(thebot.ThreadedPlugin):
     def do_job(self):
         self._remind_users_about_their_tasks()
 
-    @thebot.route('set my timezone to (?P<timezone>.+/.+)')
+    @thebot.respond('set my timezone to (?P<timezone>.+/.+)')
     def set_timezone(self, request, timezone):
         """Set you timezone"""
         timezones = self.storage.get('timezones', {})
@@ -137,7 +137,7 @@ class Plugin(thebot.ThreadedPlugin):
         return timezones.get(user, 'UTC')
 
 
-    @thebot.route('now')
+    @thebot.respond('now')
     def now(self, request):
         """Outputs server time and user time."""
 
