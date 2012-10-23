@@ -104,7 +104,7 @@ class Adapter(thebot.Adapter):
             message = nick_re.sub('', message)
 
             request = IRCRequest(message, self.bot, nick, channel, direct)
-            return self.callback(request)
+            return self.callback(request, direct=direct)
 
         conn = IRCConnection(host, port, nick)
         conn.register_callbacks((

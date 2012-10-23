@@ -53,7 +53,12 @@ class TestAdapter(Adapter):
     def write(self, input_line, user='some user'):
         """This method is for test purpose.
         """
-        self.callback(TestRequest(input_line, self.bot, user))
+        name = 'Thebot, '
+
+        if input_line.startswith(name):
+            self.callback(TestRequest(input_line[len(name):], self.bot, user), direct=True)
+        else:
+            self.callback(TestRequest(input_line, self.bot, user), direct=False)
 
 
 class TestPlugin(Plugin):
@@ -95,11 +100,13 @@ def test_one_line():
 
 
 def test_unknown_command():
+    """TheBot reports about unknown commands, addressed directly to him."""
+
     with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
         adapter = bot.adapters[0]
 
         eq_(adapter._lines, [])
-        adapter.write('some command')
+        adapter.write('Thebot, some command')
         eq_(adapter._lines, ['I don\'t know command "some command".'])
 
 

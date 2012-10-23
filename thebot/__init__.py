@@ -518,7 +518,7 @@ class Bot(object):
         )
         return parser
 
-    def on_request(self, request):
+    def on_request(self, request, direct=True):
         if request is EXIT:
             self.exiting = True
         else:
@@ -530,7 +530,10 @@ class Bot(object):
                         raise RuntimeError('Plugin {0} should not return response directly. Use request.respond(some message).')
                     break
             else:
-                request.respond('I don\'t know command "{0}".'.format(request.message))
+                if direct:
+                    # If message wass addressed to TheBot, then it
+                    # should report that he does not know such command.
+                    request.respond('I don\'t know command "{0}".'.format(request.message))
 
     def close(self):
         """Will close all connections here.
