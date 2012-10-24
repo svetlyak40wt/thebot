@@ -1,13 +1,14 @@
 # coding: utf-8
 
+from __future__ import absolute_import, unicode_literals
+
 import times
 import datetime
 import mock
 import thebot
-import six
 import sys
 
-from thebot import Request, Adapter, Plugin, Storage, route, Config
+from thebot import Request, Adapter, Plugin, Storage, Config, on_pattern, on_command
 from thebot.batteries import todo
 from nose.tools import eq_, assert_raises
 from contextlib import closing
@@ -22,6 +23,7 @@ class Bot(thebot.Bot):
             log_filename='unittest.log',
             storage_filename='unittest-{}.storage'.format(python_version),
         )
+        kwargs['config_filename'] = 'unexistent.conf'
         super(Bot, self).__init__(*args, **kwargs)
 
         self.storage.clear()
@@ -51,16 +53,23 @@ class TestAdapter(Adapter):
     def write(self, input_line, user='some user'):
         """This method is for test purpose.
         """
-        self.callback(TestRequest(input_line, self.bot, user))
+        name = 'Thebot, '
+
+        if input_line.startswith(name):
+            self.callback(TestRequest(input_line[len(name):], self.bot, user), direct=True)
+        else:
+            self.callback(TestRequest(input_line, self.bot, user), direct=False)
 
 
 class TestPlugin(Plugin):
-    @route('show me a cat')
-    def show_a_cat(self, request):
-        """Shows a cat."""
-        request.respond('the Cat')
+    name = 'test'
+    @on_pattern('cat')
+    def i_like_cats(self, request):
+        """Shows how TheBot likes cats."""
+        request.respond('I like cats!!!')
 
-    @route('find (?P<this>.*)')
+    @on_command('search (?P<this>.*)')
+    @on_command('find (?P<this>.*)')
     def find(self, request, this=None):
         """Making a fake search of the term."""
         request.respond('I found {0}'.format(this))
@@ -75,7 +84,7 @@ def test_install_plugins():
     with closing(Bot(adapters=[], plugins=[TestPlugin])) as bot:
         eq_(0, len(bot.adapters))
         eq_(2, len(bot.plugins)) # Help plugin is added by default
-        eq_(3, len(bot.patterns))
+        eq_(4, len(bot.patterns))
 
 
 def test_one_line():
@@ -83,25 +92,28 @@ def test_one_line():
         adapter = bot.get_adapter('test')
 
         eq_(adapter._lines, [])
-        adapter.write('show me a cat')
-        eq_(adapter._lines, ['the Cat'])
+        adapter.write('I have a cat')
+        eq_(adapter._lines, ['I like cats!!!'])
 
         adapter.write('find Umputun')
         eq_(adapter._lines[-1], 'I found Umputun')
 
 
 def test_unknown_command():
+    """TheBot reports about unknown commands, addressed directly to him."""
+
     with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
         adapter = bot.adapters[0]
 
         eq_(adapter._lines, [])
-        adapter.write('some command')
+        adapter.write('Thebot, some command')
         eq_(adapter._lines, ['I don\'t know command "some command".'])
 
 
 def test_exception_raised_if_plugin_returns_not_none():
     class BadPlugin(Plugin):
-        @route('^do$')
+        name = 'bad'
+        @on_command('do')
         def do(self, request):
             return 'Hello world'
 
@@ -138,14 +150,33 @@ def test_storage_nesting():
     second['one'] = {'some': 'dict'}
 
     eq_(['first:blah', 'second:one'], sorted(storage.keys()))
-    eq_(['first:blah'], sorted(first.keys()))
-    eq_(['second:one'], sorted(second.keys()))
+    eq_(['first:blah', 'second:one'], sorted(list(storage)))
+
+    eq_(['blah'], first.keys())
+    eq_(['blah'], list(first))
+
+    eq_(['one'], second.keys())
+    eq_(['one'], list(second))
 
     eq_('minor', first['blah'])
     assert_raises(KeyError, lambda: second['blah'])
 
     first.clear()
     eq_(['second:one'], sorted(storage.keys()))
+    eq_(['second:one'], sorted(list(storage)))
+
+def test_storage_deep_nesting():
+    storage = Storage('/tmp/thebot.storage')
+    storage.clear()
+
+    first = storage.with_prefix('first:')
+    second = first.with_prefix('second:')
+
+    second['blah'] = 'minor'
+
+    eq_(['first:second:blah'], storage.keys())
+    eq_(['second:blah'], first.keys())
+    eq_(['blah'], second.keys())
 
 
 def test_help_command():
@@ -155,11 +186,16 @@ def test_help_command():
         adapter.write('help')
         eq_(
             [
-                six.u('I support following commands:\n'
-                      '  find (?P<this>.*) — Making a fake search of the term.\n'
-                      '  help — Shows a help.\n'
-                      '  show me a cat — Shows a cat.'
-                )
+                'I support following commands:\n'
+                '  Plugin \'test\':\n'
+                '    find (?P<this>.*) — Making a fake search of the term.\n'
+                '    search (?P<this>.*)\n'
+                '  Plugin \'help\':\n'
+                '    help — Shows a help.\n'
+                '\n'
+                'And react on following patterns:\n'
+                '  Plugin \'test\':\n'
+                '    cat — Shows how TheBot likes cats.'
             ],
             adapter._lines
         )
@@ -173,6 +209,23 @@ def test_delete_from_storage():
     del storage['blah']
 
     eq_([], sorted(storage.keys()))
+
+
+def test_storage_is_iterable_as_dict():
+    storage = Storage('/tmp/thebot.storage')
+    storage.clear()
+
+    storage['blah'] = 'minor'
+    storage['another'] = 'option'
+
+    eq_(['another', 'blah'], sorted(storage.keys()))
+    eq_(['minor', 'option'], sorted(storage.values()))
+    eq_([('another', 'option'), ('blah', 'minor')], sorted(storage.items()))
+
+    eq_(
+        ['another', 'blah'],
+        sorted(item for item in storage)
+    )
 
 
 

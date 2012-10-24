@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import sleekxmpp
 import thebot
@@ -12,7 +12,8 @@ class XMPPRequest(thebot.Request):
         self._from = _from
 
     def get_user(self):
-        return self._from
+        """Returns user's JID without resource name."""
+        return self._from.rsplit('/', 1)[0]
 
     def respond(self, message):
         msg = sleekxmpp.stanza.message.Message()

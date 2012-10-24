@@ -1,29 +1,52 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 
 import re
 import irc
 import logging
+import time
 import thebot
 import threading
 
 
 class IRCRequest(thebot.Request):
-    def __init__(self, message, bot, nick, channel):
+    def __init__(self, message, bot, nick, channel, direct):
         super(IRCRequest, self).__init__(message)
         self.bot = bot
         self.nick = nick
         self.channel = channel
+        self.direct = direct
 
     def get_user(self):
         return (self.channel, self.nick)
 
     def respond(self, message):
-        message = thebot.utils.force_str(message)
+        self._post(message, self.direct)
+
+    def shout(self, message):
+        self._post(message, False)
+
+    def _post(self, message, respond_directly=True):
+        logger = logging.getLogger('adapter.irc.request')
         adapter = self.bot.get_adapter('irc')
         irc_connection = adapter.irc_connection
 
+        sleep_time = 0.05
+        max_sleep_time = 1
+
         for line in message.split('\n'):
-            irc_connection.respond(line, channel=self.channel, nick=self.nick)
+            if respond_directly:
+                line = self.nick + ': ' + line
+
+            logger.debug('Sending "{}" to {} at {}'.format(
+                line, self.nick, self.channel
+            ))
+            irc_connection.respond(thebot.utils.force_str(line), channel=self.channel, nick=self.nick)
+
+            # this is a protection from the flood
+            # if we'll send to often, then server may decide to
+            # logout us
+            time.sleep(min(sleep_time, max_sleep_time))
+            sleep_time *= 2
 
 
 class IRCConnection(irc.IRCConnection):
@@ -75,17 +98,23 @@ class Adapter(thebot.Adapter):
 
             It verifies if a bot's nick is mentioned, and pass data to TheBot.
             """
+            logging.getLogger('adapter.irc').debug(
+                'Received message "{}" from {} at channel {}.'.format(
+                    message, nick, channel
+                )
+            )
             message = thebot.utils.force_unicode(message)
-            nick_re = re.compile(u'^%s[:,\s]\s*' % conn.nick)
+            nick_re = re.compile('^%s[:,\s]\s*' % conn.nick)
 
-            if nick_re.match(message) is not None:
-                message = nick_re.sub(u'', message)
-                request = IRCRequest(message, self.bot, nick, channel)
-                return self.callback(request)
+            direct = nick_re.match(message) is not None
+            message = nick_re.sub('', message)
+
+            request = IRCRequest(message, self.bot, nick, channel, direct)
+            return self.callback(request, direct=direct)
 
         conn = IRCConnection(host, port, nick)
         conn.register_callbacks((
-            (re.compile(u'.*'), on_message),
+            (re.compile('.*'), on_message),
         ))
 
         self.irc_connection = conn

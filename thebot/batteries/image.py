@@ -1,13 +1,15 @@
 # coding: utf-8
+from __future__ import absolute_import, unicode_literals
 
 import requests
 import anyjson
 import random
-import thebot
+
+from thebot import Plugin, on_command
 
 
-class Plugin(thebot.Plugin):
-    @thebot.route('(image|img)( me)? (?P<query>.+)')
+class Plugin(Plugin):
+    @on_command('(image|img)( me)? (?P<query>.+)')
     def image(self, request, query):
         """Google random image on given topic."""
         url = self._find_image(query)
@@ -16,8 +18,8 @@ class Plugin(thebot.Plugin):
         else:
             request.respond(url)
 
-    @thebot.route('(?:mo?u)?sta(?:s|c)he?(?: for)? (?P<query>.+)')
-    @thebot.route('усы для (?P<query>.+)')
+    @on_command('moustache( for)? (?P<query>.+)')
+    @on_command('усы( для)? (?P<query>.+)')
     def mustache(self, request, query):
         """Apply moustache on image URL or random image on given topic."""
         type = int(random.randint(0, 2))

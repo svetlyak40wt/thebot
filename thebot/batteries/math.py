@@ -1,12 +1,14 @@
 # coding: utf-8
+from __future__ import absolute_import, unicode_literals
 
 import requests
 import anyjson
-import thebot
+
+from thebot import Plugin, on_command
 
 
-class Plugin(thebot.Plugin):
-    @thebot.route('(calc|calculate|convert|math)( me)? (?P<expression>.+)')
+class Plugin(Plugin):
+    @on_command('(calc|calculate|convert|math)( me)? (?P<expression>.+)')
     def math(self, request, expression):
         """Use Google's calculator to do some math."""
         response = requests.get(

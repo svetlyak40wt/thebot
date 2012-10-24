@@ -1,3 +1,5 @@
+from __future__ import absolute_import, unicode_literals
+
 import sys
 import threading
 import thebot
@@ -5,8 +7,11 @@ import thebot
 
 class ConsoleRequest(thebot.Request):
     def respond(self, message):
-        sys.stdout.write('{0}\n'.format(thebot.utils.force_str(message)))
+        sys.stdout.write('{0}\n'.format(message))
         sys.stdout.flush()
+
+    def get_user(self):
+        return 'local'
 
 
 class Adapter(thebot.Adapter):
