@@ -34,7 +34,12 @@ class Request(object):
         self.message = message
 
     def respond(self, message):
+        """Bot will use this method to reply directly to the user."""
         raise NotImplementedError('You have to implement \'respond\' method in you Request class.')
+
+    def shout(self, message):
+        """This method will be used to say something to the channel or a chatroom."""
+        self.respond(message)
 
 
 class Adapter(object):
@@ -126,7 +131,7 @@ class ThreadedPlugin(Plugin):
             on_stop()
 
 
-class Pattern(object):
+class Re(object):
     def __init__(self, pattern):
         self.pattern = pattern
         self._re = None
@@ -139,15 +144,15 @@ class Pattern(object):
             return self._re.match(message)
 
 
-class HearPattern(Pattern):
+class PatternRe(Re):
     def __init__(self, pattern):
-        super(HearPattern, self).__init__(pattern)
+        super(PatternRe, self).__init__(pattern)
         self._re = re.compile('.*' + self.pattern + '.*')
 
 
-class RespondPattern(Pattern):
+class CommandRe(Re):
     def __init__(self, pattern):
-        super(RespondPattern, self).__init__(pattern)
+        super(CommandRe, self).__init__(pattern)
         self._re = re.compile('^' + pattern + '$')
 
 
@@ -164,14 +169,14 @@ def _make_routing_decorator(pattern_cls):
     return decorator
 
 
-hear = _make_routing_decorator(HearPattern)
-respond = _make_routing_decorator(RespondPattern)
+on_pattern = _make_routing_decorator(PatternRe)
+on_command = _make_routing_decorator(CommandRe)
 
 
 class HelpPlugin(Plugin):
     name = 'help'
 
-    @respond('help')
+    @on_command('help')
     def help(self, request):
         """Shows a help."""
         lines = []
@@ -179,10 +184,10 @@ class HelpPlugin(Plugin):
         reactions = []
 
         for pattern, callback in self.bot.patterns:
-            if isinstance(pattern, HearPattern):
-                reactions.append((pattern, callback))
-            else:
+            if isinstance(pattern, CommandRe):
                 commands.append((pattern, callback))
+            else:
+                reactions.append((pattern, callback))
 
         def gen_docs(pattern_list):
             current_plugin = None

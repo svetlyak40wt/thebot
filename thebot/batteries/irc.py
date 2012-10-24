@@ -20,6 +20,12 @@ class IRCRequest(thebot.Request):
         return (self.channel, self.nick)
 
     def respond(self, message):
+        self._post(message, self.direct)
+
+    def shout(self, message):
+        self._post(message, False)
+
+    def _post(self, message, respond_directly=True):
         logger = logging.getLogger('adapter.irc.request')
         adapter = self.bot.get_adapter('irc')
         irc_connection = adapter.irc_connection
@@ -28,7 +34,7 @@ class IRCRequest(thebot.Request):
         max_sleep_time = 1
 
         for line in message.split('\n'):
-            if self.direct:
+            if respond_directly:
                 line = self.nick + ': ' + line
 
             logger.debug('Sending "{}" to {} at {}'.format(

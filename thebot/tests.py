@@ -8,7 +8,7 @@ import mock
 import thebot
 import sys
 
-from thebot import Request, Adapter, Plugin, Storage, Config, hear, respond
+from thebot import Request, Adapter, Plugin, Storage, Config, on_pattern, on_command
 from thebot.batteries import todo
 from nose.tools import eq_, assert_raises
 from contextlib import closing
@@ -63,13 +63,13 @@ class TestAdapter(Adapter):
 
 class TestPlugin(Plugin):
     name = 'test'
-    @hear('cat')
+    @on_pattern('cat')
     def i_like_cats(self, request):
         """Shows how TheBot likes cats."""
         request.respond('I like cats!!!')
 
-    @respond('search (?P<this>.*)')
-    @respond('find (?P<this>.*)')
+    @on_command('search (?P<this>.*)')
+    @on_command('find (?P<this>.*)')
     def find(self, request, this=None):
         """Making a fake search of the term."""
         request.respond('I found {0}'.format(this))
@@ -113,7 +113,7 @@ def test_unknown_command():
 def test_exception_raised_if_plugin_returns_not_none():
     class BadPlugin(Plugin):
         name = 'bad'
-        @respond('do')
+        @on_command('do')
         def do(self, request):
             return 'Hello world'
 

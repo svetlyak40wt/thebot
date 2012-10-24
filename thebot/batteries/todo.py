@@ -1,7 +1,6 @@
 # coding: utf-8
 from __future__ import absolute_import, unicode_literals
 
-import thebot
 import bisect
 import times
 import hashlib
@@ -9,6 +8,7 @@ import six
 
 from dateutil.parser import parse
 from collections import defaultdict
+from thebot import ThreadedPlugin, on_command
 
 
 def _gen_hashes(tasks):
@@ -29,7 +29,7 @@ def _gen_hashes(tasks):
     return shas, min_len
 
 
-class Plugin(thebot.ThreadedPlugin):
+class Plugin(ThreadedPlugin):
     name = 'todo'
 
     def __init__(self, *args, **kwargs):
@@ -49,7 +49,7 @@ class Plugin(thebot.ThreadedPlugin):
         all_tasks[user] = tasks
         self.storage['tasks'] = all_tasks
 
-    @thebot.respond('remind( me)? at (?P<datetime>.+) to (?P<about>.+)')
+    @on_command('remind( me)? at (?P<datetime>.+) to (?P<about>.+)')
     def remind(self, request, datetime, about):
         """Remind about a TODO at given time."""
 
@@ -68,7 +68,7 @@ class Plugin(thebot.ThreadedPlugin):
 
         request.respond('ok')
 
-    @thebot.respond('my tasks')
+    @on_command('my tasks')
     def my_tasks(self, request):
         """Show my tasks"""
         user = request.get_user()
@@ -87,7 +87,7 @@ class Plugin(thebot.ThreadedPlugin):
         else:
             request.respond('You have no tasks')
 
-    @thebot.respond('(?P<task_id>[0-9a-z]{2,40}) done')
+    @on_command('(?P<task_id>[0-9a-z]{2,40}) done')
     def done(self, request, task_id):
         # TODO add unittests for two cases:
         # * when task_id not found
@@ -123,7 +123,7 @@ class Plugin(thebot.ThreadedPlugin):
     def do_job(self):
         self._remind_users_about_their_tasks()
 
-    @thebot.respond('set my timezone to (?P<timezone>.+/.+)')
+    @on_command('set my timezone to (?P<timezone>.+/.+)')
     def set_timezone(self, request, timezone):
         """Set you timezone"""
         timezones = self.storage.get('timezones', {})
@@ -137,7 +137,7 @@ class Plugin(thebot.ThreadedPlugin):
         return timezones.get(user, 'UTC')
 
 
-    @thebot.respond('now')
+    @on_command('now')
     def now(self, request):
         """Outputs server time and user time."""
 
