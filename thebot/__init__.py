@@ -267,7 +267,8 @@ class Shelve(shelve.DbfilenameShelf):
         f = six.BytesIO()
         p = Pickler(f, self._protocol, global_objects=self._global_objects)
         p.dump(value)
-        self.dict[key] = f.getvalue()
+        value = f.getvalue()
+        self.dict[key] = value
 
 
 class Storage(MutableMapping):
@@ -284,13 +285,13 @@ class Storage(MutableMapping):
         self.global_objects = global_objects or {}
 
     def __getitem__(self, name):
-        return self._shelve.__getitem__(self.prefix + name)
+        return self._shelve.__getitem__(utils.force_str(self.prefix + name))
 
     def __setitem__(self, name, value):
-        return self._shelve.__setitem__(self.prefix + name, value)
+        return self._shelve.__setitem__(utils.force_str(self.prefix + name), value)
 
     def __delitem__(self, name):
-        return self._shelve.__delitem__(self.prefix + name)
+        return self._shelve.__delitem__(utils.force_str(self.prefix + name))
 
     def __len__(self):
         return sum(1 for key in self)
@@ -308,7 +309,7 @@ class Storage(MutableMapping):
 
     def clear(self):
         for key in self.keys():
-            del self._shelve[self.prefix + key]
+            del self[key]
 
     def with_prefix(self, prefix):
         return Storage(self._shelve, prefix=self.prefix + prefix, global_objects=self.global_objects)
