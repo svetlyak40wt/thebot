@@ -209,11 +209,16 @@ class HelpPlugin(Plugin):
 
                 previous_callback = callback
 
-        lines.append('I support following commands:')
-        gen_docs(commands)
-        lines.append('')
-        lines.append('And react on following patterns:')
-        gen_docs(reactions)
+        if commands:
+            lines.append('I support following commands:')
+            gen_docs(commands)
+
+        if reactions:
+            if lines:
+                lines.append('')
+
+            lines.append('And react on following patterns:')
+            gen_docs(reactions)
 
         request.respond('\n'.join(lines))
 
