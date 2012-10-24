@@ -1,3 +1,8 @@
+0.2.1
+-----
+
+* Don't who unnecessary line 'And react on following patterns:' if there is now such patterns.
+
 0.2.0
 -----
 
