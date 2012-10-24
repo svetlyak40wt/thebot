@@ -34,7 +34,12 @@ class Request(object):
         self.message = message
 
     def respond(self, message):
+        """Bot will use this method to reply directly to the user."""
         raise NotImplementedError('You have to implement \'respond\' method in you Request class.')
+
+    def shout(self, message):
+        """This method will be used to say something to the channel or a chatroom."""
+        self.respond(message)
 
 
 class Adapter(object):
@@ -60,6 +65,7 @@ class Plugin(object):
             if callable(value):
                 patterns = getattr(value, '_patterns', [])
                 for pattern in patterns:
+                    pattern.plugin_name = self.name
                     yield (pattern, value)
 
 
@@ -125,31 +131,89 @@ class ThreadedPlugin(Plugin):
             on_stop()
 
 
-def route(pattern):
-    """Decorator to assign routes to plugin's methods.
-    """
-    def deco(func):
-        if getattr(func, '_patterns', None) is None:
-            func._patterns = []
-        func._patterns.append(pattern)
-        return func
-    return deco
+class Re(object):
+    def __init__(self, pattern):
+        self.pattern = pattern
+        self._re = None
+
+    def __unicode__(self):
+        return self.pattern
+
+    def match(self, message):
+        if self._re is not None:
+            return self._re.match(message)
+
+
+class PatternRe(Re):
+    def __init__(self, pattern):
+        super(PatternRe, self).__init__(pattern)
+        self._re = re.compile('.*' + self.pattern + '.*')
+
+
+class CommandRe(Re):
+    def __init__(self, pattern):
+        super(CommandRe, self).__init__(pattern)
+        self._re = re.compile('^' + pattern + '$')
+
+
+def _make_routing_decorator(pattern_cls):
+    def decorator(pattern):
+        """Decorator to assign routes to plugin's methods.
+        """
+        def deco(func):
+            if getattr(func, '_patterns', None) is None:
+                func._patterns = []
+            func._patterns.append(pattern_cls(pattern))
+            return func
+        return deco
+    return decorator
+
+
+on_pattern = _make_routing_decorator(PatternRe)
+on_command = _make_routing_decorator(CommandRe)
 
 
 class HelpPlugin(Plugin):
-    @route('help')
+    name = 'help'
+
+    @on_command('help')
     def help(self, request):
         """Shows a help."""
         lines = []
-        for pattern, callback in self.bot.patterns:
-            docstring = utils.force_unicode(callback.__doc__)
-            if docstring:
-                lines.append('  {} — {}'.format(pattern, docstring))
-            else:
-                lines.append('  ' + pattern)
+        commands = []
+        reactions = []
 
-        lines.sort()
-        lines.insert(0, 'I support following commands:')
+        for pattern, callback in self.bot.patterns:
+            if isinstance(pattern, CommandRe):
+                commands.append((pattern, callback))
+            else:
+                reactions.append((pattern, callback))
+
+        def gen_docs(pattern_list):
+            current_plugin = None
+            previous_callback = None
+
+            for pattern, callback in pattern_list:
+                if current_plugin != pattern.plugin_name:
+                    current_plugin = pattern.plugin_name
+                    lines.append('  Plugin \'{}\':'.format(current_plugin))
+
+                docstring = utils.force_unicode(callback.__doc__)
+                if not docstring:
+                    docstring = 'No description'
+
+                if previous_callback != callback:
+                    lines.append('    {} — {}'.format(pattern.pattern, docstring))
+                else:
+                    lines.append('    ' + pattern.pattern)
+
+                previous_callback = callback
+
+        lines.append('I support following commands:')
+        gen_docs(commands)
+        lines.append('')
+        lines.append('And react on following patterns:')
+        gen_docs(reactions)
 
         request.respond('\n'.join(lines))
 
@@ -427,13 +491,8 @@ class Bot(object):
         for plugin_cls in plugin_classes:
             p = plugin_cls(self)
             self.plugins.append(p)
-            self.patterns.extend(p.get_callbacks())
-
-        self.patterns = [
-            (utils.force_unicode(pattern), callback)
-            for pattern, callback in self.patterns
-        ]
-
+            callbacks = p.get_callbacks()
+            self.patterns.extend(callbacks)
 
     @staticmethod
     def get_general_options():
@@ -464,19 +523,22 @@ class Bot(object):
         )
         return parser
 
-    def on_request(self, request):
+    def on_request(self, request, direct=True):
         if request is EXIT:
             self.exiting = True
         else:
             for pattern, callback in self.patterns:
-                match = re.match(pattern, request.message)
+                match = pattern.match(request.message)
                 if match is not None:
                     result = callback(request, **match.groupdict())
                     if result is not None:
                         raise RuntimeError('Plugin {0} should not return response directly. Use request.respond(some message).')
                     break
             else:
-                request.respond('I don\'t know command "{0}".'.format(request.message))
+                if direct:
+                    # If message wass addressed to TheBot, then it
+                    # should report that he does not know such command.
+                    request.respond('I don\'t know command "{0}".'.format(request.message))
 
     def close(self):
         """Will close all connections here.
