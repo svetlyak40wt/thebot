@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import unicode_literals, absolute_import, print_function
 
 import thebot
 import sys
+import server_reloader
 
 from time import sleep
 from contextlib import closing
-from thebot import autoreload
 
 def run_bot(*args):
     with closing(thebot.Bot(args)) as bot:
@@ -19,7 +19,12 @@ def run_bot(*args):
             pass
 
 def main():
-    autoreload.main(run_bot, tuple(sys.argv[1:]))
+    server_reloader.main(
+        run_bot,
+        tuple(sys.argv[1:]),
+        {},
+        lambda: print('Reloading code…')
+    )
 
 
 if __name__ == '__main__':
