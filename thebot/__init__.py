@@ -8,6 +8,7 @@ import os
 import pickle
 import pkg_resources
 import re
+import server_reloader
 import shelve
 import six
 import threading
@@ -500,6 +501,9 @@ class Bot(object):
             callbacks = p.get_callbacks()
             self.patterns.extend(callbacks)
 
+        if self.config.reload_on_changes:
+            server_reloader.trigger_on_code_changes()
+
     @staticmethod
     def get_general_options():
         parser = argparse.ArgumentParser(
@@ -516,6 +520,10 @@ class Bot(object):
         parser.add_argument(
             '--storage-filename', default='thebot.storage',
             help='Path to a database file, used for TheBot\'s memory. Default: thebot.storage.'
+        )
+        parser.add_argument(
+            '--reload-on-changes', action='store_true', default=False,
+            help='Track source files changes and restart the bot. Default: False.'
         )
 
         group = parser.add_argument_group('General options')

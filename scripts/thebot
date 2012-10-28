@@ -21,9 +21,9 @@ def run_bot(*args):
 def main():
     server_reloader.main(
         run_bot,
-        tuple(sys.argv[1:]),
-        {},
-        lambda: print('Reloading code…')
+        args=tuple(sys.argv[1:]),
+        before_reload=lambda: print('Reloading code…'),
+        watch_on_files=False,
     )
 
 
