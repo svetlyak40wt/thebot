@@ -1,3 +1,4 @@
+# coding: utf-8
 from __future__ import absolute_import, unicode_literals
 
 import sleekxmpp
@@ -26,6 +27,9 @@ class XMPPRequest(thebot.Request):
 
 
 class Adapter(thebot.Adapter):
+    ignore_jids = [
+        'lastmail.ya.ru/Яндекс.Информер',
+    ]
     @staticmethod
     def get_options(parser):
         group = parser.add_argument_group('XMPP options')
@@ -63,7 +67,7 @@ class Adapter(thebot.Adapter):
             """
 
             if msg['type'] in ('chat', 'normal'):
-                if msg['from'] != msg['to']:
+                if msg['from'] != msg['to'] and msg['from'] not in self.ignore_jids:
                     request = XMPPRequest(msg['body'], self.bot, unicode(msg['from']))
                     self.callback(request)
 
