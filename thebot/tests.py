@@ -13,15 +13,16 @@ from thebot.batteries import todo
 from nose.tools import eq_, assert_raises
 from contextlib import closing
 
+PYTHON_VERSION = '-'.join(map(str, sys.version_info[:3]))
+STORAGE_FILENAME = 'unittest-{}.storage'.format(PYTHON_VERSION)
 
 class Bot(thebot.Bot):
     """Test bot which uses slightly different settings."""
     def __init__(self, *args, **kwargs):
-        python_version = '-'.join(map(str, sys.version_info[:3]))
         kwargs['config_dict'] = dict(
             unittest=True,
             log_filename='unittest.log',
-            storage_filename='unittest-{}.storage'.format(python_version),
+            storage_filename=STORAGE_FILENAME,
         )
         kwargs['config_filename'] = 'unexistent.conf'
         super(Bot, self).__init__(*args, **kwargs)
@@ -125,58 +126,58 @@ def test_exception_raised_if_plugin_returns_not_none():
 
 
 def test_simple_storage():
-    storage = Storage('/tmp/thebot.storage')
-    storage.clear()
+    with closing(Storage(STORAGE_FILENAME)) as storage:
+        storage.clear()
 
-    eq_([], storage.keys())
+        eq_([], storage.keys())
 
-    storage['blah'] = 'minor'
-    storage['one'] = {'some': 'dict'}
+        storage['blah'] = 'minor'
+        storage['one'] = {'some': 'dict'}
 
-    eq_(['blah', 'one'], sorted(storage.keys()))
-    eq_('minor', storage['blah'])
+        eq_(['blah', 'one'], sorted(storage.keys()))
+        eq_('minor', storage['blah'])
 
 
 def test_storage_nesting():
-    storage = Storage('/tmp/thebot.storage')
-    storage.clear()
+    with closing(Storage(STORAGE_FILENAME)) as storage:
+        storage.clear()
 
-    first = storage.with_prefix('first:')
-    second = storage.with_prefix('second:')
+        first = storage.with_prefix('first:')
+        second = storage.with_prefix('second:')
 
-    eq_([], storage.keys())
+        eq_([], storage.keys())
 
-    first['blah'] = 'minor'
-    second['one'] = {'some': 'dict'}
+        first['blah'] = 'minor'
+        second['one'] = {'some': 'dict'}
 
-    eq_(['first:blah', 'second:one'], sorted(storage.keys()))
-    eq_(['first:blah', 'second:one'], sorted(list(storage)))
+        eq_(['first:blah', 'second:one'], sorted(storage.keys()))
+        eq_(['first:blah', 'second:one'], sorted(list(storage)))
 
-    eq_(['blah'], first.keys())
-    eq_(['blah'], list(first))
+        eq_(['blah'], first.keys())
+        eq_(['blah'], list(first))
 
-    eq_(['one'], second.keys())
-    eq_(['one'], list(second))
+        eq_(['one'], second.keys())
+        eq_(['one'], list(second))
 
-    eq_('minor', first['blah'])
-    assert_raises(KeyError, lambda: second['blah'])
+        eq_('minor', first['blah'])
+        assert_raises(KeyError, lambda: second['blah'])
 
-    first.clear()
-    eq_(['second:one'], sorted(storage.keys()))
-    eq_(['second:one'], sorted(list(storage)))
+        first.clear()
+        eq_(['second:one'], sorted(storage.keys()))
+        eq_(['second:one'], sorted(list(storage)))
 
 def test_storage_deep_nesting():
-    storage = Storage('/tmp/thebot.storage')
-    storage.clear()
+    with closing(Storage(STORAGE_FILENAME)) as storage:
+        storage.clear()
 
-    first = storage.with_prefix('first:')
-    second = first.with_prefix('second:')
+        first = storage.with_prefix('first:')
+        second = first.with_prefix('second:')
 
-    second['blah'] = 'minor'
+        second['blah'] = 'minor'
 
-    eq_(['first:second:blah'], storage.keys())
-    eq_(['second:blah'], first.keys())
-    eq_(['blah'], second.keys())
+        eq_(['first:second:blah'], storage.keys())
+        eq_(['second:blah'], first.keys())
+        eq_(['blah'], second.keys())
 
 
 def test_help_command():
@@ -202,52 +203,49 @@ def test_help_command():
 
 
 def test_delete_from_storage():
-    storage = Storage('/tmp/thebot.storage')
-    storage.clear()
+    with closing(Storage(STORAGE_FILENAME)) as storage:
+        storage.clear()
 
-    storage['blah'] = 'minor'
-    del storage['blah']
+        storage['blah'] = 'minor'
+        del storage['blah']
 
-    eq_([], sorted(storage.keys()))
+        eq_([], sorted(storage.keys()))
 
 
 def test_storage_is_iterable_as_dict():
-    storage = Storage('/tmp/thebot.storage')
-    storage.clear()
+    with closing(Storage(STORAGE_FILENAME)) as storage:
+        storage.clear()
 
-    storage['blah'] = 'minor'
-    storage['another'] = 'option'
+        storage['blah'] = 'minor'
+        storage['another'] = 'option'
 
-    eq_(['another', 'blah'], sorted(storage.keys()))
-    eq_(['minor', 'option'], sorted(storage.values()))
-    eq_([('another', 'option'), ('blah', 'minor')], sorted(storage.items()))
+        eq_(['another', 'blah'], sorted(storage.keys()))
+        eq_(['minor', 'option'], sorted(storage.values()))
+        eq_([('another', 'option'), ('blah', 'minor')], sorted(storage.items()))
 
-    eq_(
-        ['another', 'blah'],
-        sorted(item for item in storage)
-    )
+        eq_(
+            ['another', 'blah'],
+            sorted(item for item in storage)
+        )
 
 
 
 def test_storage_restores_bot_attribute():
     with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
-        storage = Storage('/tmp/thebot.storage', global_objects=dict(bot=bot))
-        storage.clear()
-
         original = Request('blah')
         original.bot = bot
 
-        storage['request'] = original
+        bot.storage['request'] = original
 
-        restored = storage['request']
+        restored = bot.storage['request']
         eq_(restored.bot, original.bot)
 
 
 def test_storage_with_prefix_keeps_global_objects():
-    storage = Storage('/tmp/thebot.storage', global_objects=dict(some='value'))
-    prefixed = storage.with_prefix('nested:')
+    with closing(Storage(STORAGE_FILENAME, global_objects=dict(some='value'))) as storage:
+        prefixed = storage.with_prefix('nested:')
 
-    eq_(storage.global_objects, prefixed.global_objects)
+        eq_(storage.global_objects, prefixed.global_objects)
 
 
 def test_get_adapter_by_name():
