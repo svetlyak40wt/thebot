@@ -10,3 +10,4 @@
 /.tox
 /dist
 /thebot.conf
+.noseids
