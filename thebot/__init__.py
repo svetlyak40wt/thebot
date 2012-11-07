@@ -105,6 +105,7 @@ class Plugin(object):
     def __init__(self, bot):
         self.bot = bot
         self.storage = self.bot.storage.with_prefix(self.__module__ + ':')
+        self.logger = logging.getLogger('thebot.plugin.' + self.name)
 
     def __unicode__(self):
         return self.name
