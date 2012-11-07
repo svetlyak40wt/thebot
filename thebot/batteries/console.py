@@ -5,15 +5,6 @@ import threading
 import thebot
 
 
-class ConsoleRequest(thebot.Request):
-    def respond(self, message):
-        sys.stdout.write('{0}\n'.format(message))
-        sys.stdout.flush()
-
-    def get_user(self):
-        return 'local'
-
-
 class Adapter(thebot.Adapter):
     def start(self):
         def loop():
@@ -28,11 +19,18 @@ class Adapter(thebot.Adapter):
 
                 line = line.strip()
 
-                self.callback(ConsoleRequest(line))
+                request = thebot.Request(
+                    self,
+                    line,
+                    thebot.User('console'),
+                )
+                self.callback(request)
 
         thread = threading.Thread(target=loop)
         thread.daemon = True
         thread.start()
 
-
+    def send(self, message, user=None, room=None, refer_by_name=False):
+        sys.stdout.write('{0}\n'.format(message))
+        sys.stdout.flush()
 

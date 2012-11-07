@@ -30,17 +30,57 @@ __version__ = pkg_resources.get_distribution(__name__).version
 EXIT = object()
 
 
+class User(object):
+    def __init__(self, id):
+        self.id = id
+
+    def __unicode__(self):
+        return self.id
+
+    def __eq__(self, another):
+        return self.id == another.id
+
+
+class Room(object):
+    def __init__(self, id):
+        self.id = id
+
+    def __unicode__(self):
+        return self.id
+
+    def __eq__(self, another):
+        return self.id == another.id
+
+
 class Request(object):
-    def __init__(self, message):
+    def __init__(self, adapter, message, user, room=None, refer_by_name=False):
+        self.adapter = adapter
         self.message = message
+        self.user = user
+        self.room = room
+        self.refer_by_name = refer_by_name
+
+    def __unicode__(self):
+        result = '{} from {}'.format(self.message, self.user)
+        if self.room:
+            result += ' at {}'.format(self.room)
+        return result
 
     def respond(self, message):
-        """Bot will use this method to reply directly to the user."""
-        raise NotImplementedError('You have to implement \'respond\' method in you Request class.')
+        self.adapter.send(
+            message,
+            user=self.user,
+            room=self.room,
+            refer_by_name=self.refer_by_name,
+        )
 
     def shout(self, message):
-        """This method will be used to say something to the channel or a chatroom."""
-        self.respond(message)
+        """This method should be used to say something to the channel or a chatroom."""
+        self.adapter.send(
+            message,
+            room=self.room,
+        )
+
 
 
 class Adapter(object):
@@ -48,17 +88,26 @@ class Adapter(object):
         self.bot = bot
         self.callback = callback
 
+    def __unicode__(self):
+        return self.name
+
     def start(self):
         """You have to override this method, if you plugin requires some background activity.
 
         Here you can create a thread, but don't forget to make its `daemon` attrubute equal to True.
         """
 
+    def is_online(self, user):
+        return False
+
 
 class Plugin(object):
     def __init__(self, bot):
         self.bot = bot
         self.storage = self.bot.storage.with_prefix(self.__module__ + ':')
+
+    def __unicode__(self):
+        return self.name
 
     def get_callbacks(self):
         for name in dir(self):
@@ -177,6 +226,10 @@ on_command = _make_routing_decorator(CommandRe)
 class HelpPlugin(Plugin):
     name = 'help'
 
+    def __init__(self, *args, **kwargs):
+        super(HelpPlugin, self).__init__(*args, **kwargs)
+        self._started_at = time.time()
+
     @on_command('help')
     def help(self, request):
         """Shows a help."""
@@ -223,6 +276,31 @@ class HelpPlugin(Plugin):
 
         request.respond('\n'.join(lines))
 
+    @on_command('version')
+    def version(self, request):
+        """Shows TheBot's version."""
+        request.respond('My version is "{}".'.format(__version__))
+
+    @on_command('uptime')
+    def uptime(self, request):
+        """Shows TheBot's uptime."""
+        uptime = time.time() - self._started_at
+        days = int(uptime / (24 * 3600))
+        hours = int((uptime % (24 * 3600) / 3600))
+        minutes = int((uptime % 3600 / 60))
+        seconds = int((uptime % 60))
+
+        uptime ='My uptime is '
+        if days:
+            uptime += '{} day(s)'.format(days)
+        elif hours:
+            uptime += '{} hour(s)'.format(hours)
+        elif minutes:
+            uptime += '{} minute(s).'.format(minutes)
+        else:
+            uptime += '{} second(s).'.format(seconds)
+
+        request.respond(uptime)
 
 class Pickler(pickle.Pickler):
     def __init__(self, file, protocol=None, global_objects=None):
@@ -381,7 +459,7 @@ class Bot(object):
         self.patterns = []
         self.exiting = False
 
-        def load(value, cls='Adapter'):
+        def load(name, cls='Adapter'):
             """Returns class by it's name.
 
             Given a 'irc' string it will try to load the following:
@@ -391,16 +469,18 @@ class Bot(object):
 
             If all of them fail, it will raise ImportError
             """
-            if isinstance(value, six.string_types):
-                try:
-                    module = importlib.import_module('thebot_' + value)
-                except ImportError:
-                    module = importlib.import_module('thebot.batteries.' + value)
 
-                loaded_value = getattr(module, cls)
-                if not hasattr(loaded_value, 'name'):
-                    loaded_value.name = value
-                return loaded_value
+            if isinstance(name, six.string_types):
+                try:
+                    module = importlib.import_module('thebot_' + name)
+                except ImportError:
+                    module = importlib.import_module('thebot.batteries.' + name)
+
+                value = getattr(module, cls)
+                if not hasattr(value, 'name'):
+                    value.name = name
+            else:
+                value = name
 
             return value
 
@@ -434,19 +514,13 @@ class Bot(object):
 
         # now, load plugin and adapter classes, collect their options
         # and parse command line again
-
         if adapters is None:
-            adapter_classes = map(lambda a: load(a, 'Adapter'), config.adapters)
-        else:
-            # we've got adapters argument (it is used for testing purpose
-            adapter_classes = adapters
+            adapters = config.adapters
+        adapter_classes = [load(a, 'Adapter') for a in adapters]
 
         if plugins is None:
-            plugin_classes = [load(a, 'Plugin') for a in  config.plugins]
-        else:
-            # we've got adapters argument (it is used for testing purpose
-            plugin_classes = plugins
-
+            plugins = config.plugins
+        plugin_classes = [load(a, 'Plugin') for a in plugins]
         plugin_classes.append(HelpPlugin)
 
         for cls in adapter_classes + plugin_classes:
@@ -480,8 +554,6 @@ class Bot(object):
         for key, value in config_dict.items():
             setattr(self.config, key, value)
 
-        self.storage = Storage(self.config.storage_filename, global_objects=dict(bot=self))
-
         logging.basicConfig(
             filename=self.config.log_filename,
             format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
@@ -489,11 +561,15 @@ class Bot(object):
         )
 
         # adapters and plugins initialization
+        global_objects = dict(bot=self)
 
         for adapter in adapter_classes:
             a = adapter(self, callback=self.on_request)
+            global_objects[a.name] = a
             a.start()
             self.adapters.append(a)
+
+        self.storage = Storage(self.config.storage_filename, global_objects=global_objects)
 
         for plugin_cls in plugin_classes:
             p = plugin_cls(self)

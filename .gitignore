@@ -1,5 +1,6 @@
 .*.swp
 *.pyc
+/.tdaemon.state
 /ctags
 /env
 /env3
@@ -10,4 +11,4 @@
 /.tox
 /dist
 /thebot.conf
-.noseids
+/.noseids

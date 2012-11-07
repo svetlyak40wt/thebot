@@ -54,7 +54,7 @@ class Plugin(ThreadedPlugin):
         """Remind about a TODO at given time."""
 
         try:
-            user = request.get_user()
+            user = request.user.id
             dt = parse(datetime)
             tz = self._get_user_timezone(user)
             dt = times.to_universal(dt, tz)
@@ -71,7 +71,7 @@ class Plugin(ThreadedPlugin):
     @on_command('my tasks')
     def my_tasks(self, request):
         """Show my tasks"""
-        user = request.get_user()
+        user = request.user.id
         tasks = self._get_tasks(user)
 
         if tasks:
@@ -92,7 +92,7 @@ class Plugin(ThreadedPlugin):
         # TODO add unittests for two cases:
         # * when task_id not found
         # * when there are more than one task which hash started from task_id
-        tasks = self._get_tasks(request.get_user())
+        tasks = self._get_tasks(request.user.id)
 
         if tasks:
             hashes, min_len = _gen_hashes(tasks)
@@ -101,7 +101,7 @@ class Plugin(ThreadedPlugin):
                 if not h.startswith(task_id):
                     filtered_tasks.append((dt, about, r))
 
-            self._set_tasks(request.get_user(), filtered_tasks)
+            self._set_tasks(request.user.id, filtered_tasks)
         request.respond('done')
 
     def _remind_users_about_their_tasks(self):
@@ -127,7 +127,7 @@ class Plugin(ThreadedPlugin):
     def set_timezone(self, request, timezone):
         """Set you timezone"""
         timezones = self.storage.get('timezones', {})
-        timezones[request.get_user()] = timezone
+        timezones[request.user.id] = timezone
         self.storage['timezones'] = timezones
 
         request.respond('done')
@@ -142,7 +142,7 @@ class Plugin(ThreadedPlugin):
         """Outputs server time and user time."""
 
         now = times.now()
-        user = request.get_user()
+        user = request.user.id
         tz = self._get_user_timezone(user)
         local = times.to_local(now, tz)
 

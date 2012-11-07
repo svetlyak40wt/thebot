@@ -11,24 +11,29 @@ import threading
 #from email.mime.text import MIMEText
 
 
-class MailRequest(thebot.Request):
-    def __init__(self, bot, message, email, message_id, subject):
-        super(MailRequest, self).__init__(message)
-        self.bot = bot
-        self.from_email = email
+class Request(thebot.Request):
+    def __init__(self, adapter, message, from_email, message_id, subject):
+        super(Request, self).__init__(adapter, message, user=thebot.User(from_email))
         self.message_id = message_id
         self.subject = subject
 
-    def get_user(self):
-        return self.from_email
-
     def respond(self, message):
-        adapter = self.bot.get_adapter('mail')
         subject = self.subject
         if not subject.lower().startswith('re: '):
             subject = 'Re: ' + subject
 
-        adapter.send(self.from_email, message, subject=subject, in_reply_to=self.message_id)
+        self.adapter.send(
+            '> {}\n{}'.format(
+                self.message,
+                message
+            ),
+            self.user,
+            subject=subject,
+            in_reply_to=self.message_id,
+        )
+
+    def shout(self, message):
+        self.respond(message)
 
 
 def _get_text_from_email(message):
@@ -156,7 +161,6 @@ class Adapter(thebot.Adapter):
                         full_from = (value.decode(charset or 'ascii') for value, charset in from_)
                         full_from = ' '.join(full_from)
                         from_email = [value for value, charset in from_ if charset is None and '@' in value][0]
-                        from_email = 'alexander-artemenko@yandex.ru'
 
                         text = _get_text_from_email(message)
                         if text is None:
@@ -167,8 +171,8 @@ class Adapter(thebot.Adapter):
                             lines = (line.strip() for line in lines)
                             lines = list(filter(None, lines))
                             first_line = lines[0]
-                            request = MailRequest(
-                                self.bot,
+                            request = Request(
+                                self,
                                 first_line,
                                 from_email,
                                 message['Message-Id'],
@@ -182,7 +186,9 @@ class Adapter(thebot.Adapter):
 
                 time.sleep(5)
 
-    def send(self, to_email, message, subject='Message from TheBot', in_reply_to=None):
+    def send(self, message, user, subject='Message from TheBot', in_reply_to=None):
+        to_email = user.id
+
         logger = logging.getLogger('thebot.batteries.mail')
         logger.debug('Sending email to "{}" in reply to "{}"'.format(to_email, in_reply_to))
 
@@ -209,7 +215,7 @@ class Adapter(thebot.Adapter):
         response['Subject'] = subject
         if in_reply_to:
             response['In-Reply-To'] = in_reply_to
-        response.set_payload(message)
+        response.set_payload(message.encode('utf8'))
 
         server.sendmail(from_email, to_email, response.as_string())
         server.quit()

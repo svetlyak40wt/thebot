@@ -8,47 +8,6 @@ import thebot
 import threading
 
 
-class IRCRequest(thebot.Request):
-    def __init__(self, message, bot, nick, channel, direct):
-        super(IRCRequest, self).__init__(message)
-        self.bot = bot
-        self.nick = nick
-        self.channel = channel
-        self.direct = direct
-
-    def get_user(self):
-        return (self.channel, self.nick)
-
-    def respond(self, message):
-        self._post(message, self.direct)
-
-    def shout(self, message):
-        self._post(message, False)
-
-    def _post(self, message, respond_directly=True):
-        logger = logging.getLogger('adapter.irc.request')
-        adapter = self.bot.get_adapter('irc')
-        irc_connection = adapter.irc_connection
-
-        sleep_time = 0.05
-        max_sleep_time = 1
-
-        for line in message.split('\n'):
-            if respond_directly:
-                line = self.nick + ': ' + line
-
-            logger.debug('Sending "{}" to {} at {}'.format(
-                line, self.nick, self.channel
-            ))
-            irc_connection.respond(thebot.utils.force_str(line), channel=self.channel, nick=self.nick)
-
-            # this is a protection from the flood
-            # if we'll send to often, then server may decide to
-            # logout us
-            time.sleep(min(sleep_time, max_sleep_time))
-            sleep_time *= 2
-
-
 class IRCConnection(irc.IRCConnection):
     def get_logger(self, logger_name, filename):
         """We override this method because don't want to have a separate log for irc messages.
@@ -109,7 +68,13 @@ class Adapter(thebot.Adapter):
             direct = nick_re.match(message) is not None
             message = nick_re.sub('', message)
 
-            request = IRCRequest(message, self.bot, nick, channel, direct)
+            request = thebot.Request(
+                self,
+                message,
+                thebot.User(nick),
+                thebot.Room(channel) if channel else None,
+                refer_by_name=direct
+            )
             return self.callback(request, direct=direct)
 
         conn = IRCConnection(host, port, nick)
@@ -126,4 +91,29 @@ class Adapter(thebot.Adapter):
                 conn.join(channel)
             conn.enter_event_loop()
 
+    def send(self, message, user=None, room=None, refer_by_name=False):
+        logger = logging.getLogger('thebot.adapter.irc')
 
+        sleep_time = 0.05
+        max_sleep_time = 1
+
+        for line in message.split('\n'):
+            if refer_by_name:
+                line = user.id + ', ' + line
+
+            logger.debug('Sending "{}" to {} at {}'.format(
+                line,
+                'everybody' if user is None else user,
+                'private channel' if room is None else room,
+            ))
+            self.irc_connection.respond(
+                thebot.utils.force_str(line),
+                nick=user.id if user else None,
+                channel=room.id if room else None,
+            )
+
+            # this is a protection from the flood
+            # if we'll send to often, then server may decide to
+            # logout us
+            time.sleep(min(sleep_time, max_sleep_time))
+            sleep_time *= 2

@@ -7,14 +7,17 @@ import datetime
 import mock
 import thebot
 import sys
+import re
 
-from thebot import Request, Adapter, Plugin, Storage, Config, on_pattern, on_command
+from thebot import Request, User, Adapter, Plugin, Storage, Config, on_pattern, on_command
 from thebot.batteries import todo
+from thebot.batteries.identity import Person
 from nose.tools import eq_, assert_raises
 from contextlib import closing
 
 PYTHON_VERSION = '-'.join(map(str, sys.version_info[:3]))
 STORAGE_FILENAME = 'unittest-{}.storage'.format(PYTHON_VERSION)
+
 
 class Bot(thebot.Bot):
     """Test bot which uses slightly different settings."""
@@ -30,26 +33,16 @@ class Bot(thebot.Bot):
         self.storage.clear()
 
 
-class TestRequest(Request):
-    def __init__(self, message, bot, user):
-        super(TestRequest, self).__init__(message)
-        self.bot = bot
-        self.user = user
-
-    def respond(self, message):
-        adapter = self.bot.get_adapter('test')
-        adapter._lines.append(message)
-
-    def get_user(self):
-        return self.user
-
-
 class TestAdapter(Adapter):
     name = 'test'
 
     def __init__(self, *args, **kwargs):
         super(TestAdapter, self).__init__(*args, **kwargs)
         self._lines = []
+        self._offline_users = set()
+
+    def send(self, message, user=None, room=None, refer_by_name=None):
+        self._lines.append(message)
 
     def write(self, input_line, user='some user'):
         """This method is for test purpose.
@@ -57,9 +50,15 @@ class TestAdapter(Adapter):
         name = 'Thebot, '
 
         if input_line.startswith(name):
-            self.callback(TestRequest(input_line[len(name):], self.bot, user), direct=True)
+            self.callback(Request(self, input_line[len(name):], user=User(user)), direct=True)
         else:
-            self.callback(TestRequest(input_line, self.bot, user), direct=False)
+            self.callback(Request(self, input_line, user=User(user)), direct=False)
+
+    def offline(self, user):
+        self._offline_users.add(user)
+
+    def is_online(self, user):
+        return not user.id in self._offline_users
 
 
 class TestPlugin(Plugin):
@@ -85,7 +84,7 @@ def test_install_plugins():
     with closing(Bot(adapters=[], plugins=[TestPlugin])) as bot:
         eq_(0, len(bot.adapters))
         eq_(2, len(bot.plugins)) # Help plugin is added by default
-        eq_(4, len(bot.patterns))
+        eq_(6, len(bot.patterns))
 
 
 def test_one_line():
@@ -193,6 +192,8 @@ def test_help_command():
                 '    search (?P<this>.*)\n'
                 '  Plugin \'help\':\n'
                 '    help — Shows a help.\n'
+                '    uptime — Shows TheBot\'s uptime.\n'
+                '    version — Shows TheBot\'s version.\n'
                 '\n'
                 'And react on following patterns:\n'
                 '  Plugin \'test\':\n'
@@ -232,13 +233,13 @@ def test_storage_is_iterable_as_dict():
 
 def test_storage_restores_bot_attribute():
     with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
-        original = Request('blah')
-        original.bot = bot
+        adapter = bot.get_adapter('test')
+        original = Request(adapter, 'some text', 'a user')
 
         bot.storage['request'] = original
 
         restored = bot.storage['request']
-        eq_(restored.bot, original.bot)
+        eq_(restored.adapter, original.adapter)
 
 
 def test_storage_with_prefix_keeps_global_objects():
@@ -369,4 +370,230 @@ xmpp:
 
     eq_(['xmpp', 'irc'], cfg.adapters)
     eq_('thebot@ya.ru', cfg.xmpp_jid)
+
+
+def _get_identity_id(adapter):
+    match = re.match(
+        r'.*bind to ([0-9a-f]{40}).*',
+        adapter._lines[-1]
+    )
+    assert match is not None
+    return match.group(1)
+
+
+def test_identity_create():
+    with closing(Bot(adapters=[TestAdapter], plugins=['identity'])) as bot:
+        adapter = bot.get_adapter('test')
+
+        adapter.write('build identity', user='user1')
+        identity = _get_identity_id(adapter)
+
+        adapter.write('bind to {}'.format(identity), user='user2')
+
+        adapter._lines[:] = []
+        adapter.write('show my accounts', user='user1')
+
+        eq_(
+            'Your identities are:\n'
+            '1) user1 (test)\n'
+            '2) user2 (test)',
+            adapter._lines[0]
+        )
+
+
+def test_identity_get_by_xxx():
+    with closing(Bot(adapters=[TestAdapter], plugins=['identity'])) as bot:
+        adapter = bot.get_adapter('test')
+        plugin = bot.get_plugin('identity')
+
+        adapter.write('build identity', user='user1')
+        identity = _get_identity_id(adapter)
+
+        adapter.write('bind to {}'.format(identity), user='user2')
+
+        eq_(identity, plugin.get_identity_by_id(identity).id)
+        eq_(identity, plugin.get_identity_by_user(adapter, User('user1')).id)
+        eq_(identity, plugin.get_identity_by_user(adapter, User('user2')).id)
+
+        eq_(None, plugin.get_identity_by_id('unexistent'))
+
+        # for the new user, a new identity will be created
+        new_identity = plugin.get_identity_by_user(adapter, User('unknown user'))
+        assert new_identity.id != identity
+
+
+def test_identity_show_my_identities_when_there_is_no_identity():
+    with closing(Bot(adapters=[TestAdapter], plugins=['identity'])) as bot:
+        adapter = bot.get_adapter('test')
+
+        adapter._lines[:] = []
+        adapter.write('show my accounts', user='user1')
+
+        eq_(
+            'Your identities are:\n'
+            '1) user1 (test)',
+            adapter._lines[0]
+        )
+
+def test_bind_to_another_identity():
+    """Testing bind to another identity, when there is already exists another identity."""
+    with closing(Bot(adapters=[TestAdapter], plugins=['identity'])) as bot:
+        adapter = bot.get_adapter('test')
+        plugin = bot.get_plugin('identity')
+
+        adapter._lines[:] = []
+        adapter.write('show my accounts', user='user1')
+
+        eq_(
+            'Your identities are:\n'
+            '1) user1 (test)',
+            adapter._lines[-1]
+        )
+
+        adapter.write('show my accounts', user='user2')
+
+        eq_(
+            'Your identities are:\n'
+            '1) user2 (test)',
+            adapter._lines[-1]
+        )
+
+        # there should be two identities now
+        eq_(2, len(plugin.identities))
+        # and two persons
+        eq_(2, len(plugin.persons))
+
+        # now let's bind user2 to user1
+        adapter.write('build identity', user='user1')
+        identity = _get_identity_id(adapter)
+
+        adapter.write('bind to {}'.format(identity), 'user2')
+
+        # now there should be only one identity
+        eq_(1, len(plugin.identities))
+        # and still two persons
+        eq_(2, len(plugin.persons))
+        # pointing to the same identity
+        eq_(
+            [identity, identity],
+            list(plugin.persons.values())
+        )
+
+def test_persons_equality():
+    with closing(Bot(adapters=[TestAdapter], plugins=['identity'])) as bot:
+        adapter = bot.get_adapter('test')
+        eq_(
+            Person(adapter, User('tester')),
+            Person(adapter, User('tester')),
+        )
+
+
+def test_users_equality():
+    eq_(
+        User('tester'),
+        User('tester'),
+    )
+
+
+def test_unbind_from_identity():
+    with closing(Bot(adapters=[TestAdapter], plugins=['identity'])) as bot:
+        adapter = bot.get_adapter('test')
+
+        adapter.write('build identity', user='user1')
+        identity = _get_identity_id(adapter)
+        adapter.write('bind to {}'.format(identity), user='user2')
+        adapter.write('unbind', user='user2')
+
+        adapter._lines[:] = []
+        adapter.write('show my accounts', user='user1')
+
+        eq_(
+            'Your identities are:\n'
+            '1) user1 (test)',
+            adapter._lines[0]
+        )
+
+
+def test_notify_first_online_person():
+    # TODO remove settings when dependency will be created
+    with closing(Bot(adapters=[TestAdapter], plugins=['identity', 'notify', 'settings'])) as bot:
+        adapter = bot.get_adapter('test')
+        plugin = bot.get_plugin('notify')
+
+        adapter.write('build identity', user='user1')
+        identity_id = _get_identity_id(adapter)
+        adapter.write('bind to {}'.format(identity_id), user='user2')
+        # now we have identity with two users
+
+        adapter._lines[:] = []
+
+        # first, check if first user will receive message
+        eq_(True, plugin.notify(identity_id, 'hello 1'))
+        eq_('hello 1', adapter._lines[-1])
+
+        adapter.offline('user1')
+
+        eq_(True, plugin.notify(identity_id, 'hello 2'))
+        eq_('hello 2', adapter._lines[-1])
+
+        adapter.offline('user2')
+
+        eq_(2, len(adapter._lines))
+        eq_(False, plugin.notify(identity_id, 'hello 3'))
+        # no messages was sent, because all persons are offline
+        eq_(2, len(adapter._lines))
+
+
+def test_notification_priorities():
+    class TestAdapter2(TestAdapter):
+        name = 'test2'
+
+    # TODO remove settings when dependency will be created
+    with closing(Bot(adapters=[TestAdapter, TestAdapter2], plugins=['identity', 'notify', 'settings'])) as bot:
+        adapter1 = bot.get_adapter('test')
+        adapter2 = bot.get_adapter('test2')
+
+        plugin = bot.get_plugin('notify')
+
+        adapter1.write('build identity', user='user1')
+        identity_id = _get_identity_id(adapter1)
+        adapter2.write('bind to {}'.format(identity_id), user='user2')
+        # now we have identity with two users
+
+        adapter1._lines[:] = []
+        adapter2._lines[:] = []
+
+        # without priorities, first user will receive message
+        eq_(True, plugin.notify(identity_id, 'hello 1'))
+        eq_('hello 1', adapter1._lines[-1])
+
+        adapter1.write('set notification-priorities test2,test', user='user1')
+
+        # now second adapter has higher priority
+        eq_(True, plugin.notify(identity_id, 'hello 2'))
+        eq_('hello 2', adapter2._lines[-1])
+
+
+def test_set_get_settings():
+    with closing(Bot(adapters=[TestAdapter], plugins=['settings', 'identity'])) as bot:
+        adapter = bot.get_adapter('test')
+        plugin = bot.get_plugin('settings')
+
+        adapter.write('build identity', user='user1')
+        identity_id = _get_identity_id(adapter)
+        adapter.write('bind to {}'.format(identity_id), user='user2')
+        # now we have identity with two users
+
+        plugin.set(identity_id, 'some-key', 'blah')
+        eq_('blah', plugin.get(identity_id, 'some-key'))
+
+        adapter.write('set some-key some-value', user='user1')
+        eq_('some-value', plugin.get(identity_id, 'some-key'))
+
+        plugin.set(identity_id, 'some-key', 'another-value')
+        adapter.write('get some-key', user='user2')
+        eq_('some-key = another-value', adapter._lines[-1])
+
+        adapter.write('my settings', user='user1')
+        eq_('You settings are:\nsome-key = another-value', adapter._lines[-1])
 
