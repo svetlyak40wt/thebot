@@ -13,6 +13,9 @@ class Person(object):
         self.adapter = adapter
         self.user = user
 
+    def __unicode__(self):
+        return '{} ({})'.format(self.user, self.adapter)
+
     def __eq__(self, another):
         return self.adapter == another.adapter and self.user == another.user
 
@@ -31,6 +34,9 @@ class Plugin(Plugin):
 
         self.identity_storage = self.storage.with_prefix('i:')
 
+        for identity in self.identity_storage.values():
+            self._add_identity(identity, save_to_storage=False)
+
     @on_command('build identity')
     def build(self, request):
         """Extend you identity with another accounts."""
@@ -40,8 +46,10 @@ class Plugin(Plugin):
             r'Ok, please, send me this command via other adapters: "bind to {}"'.format(identity.id)
         )
 
-    def _add_identity(self, identity):
-        self.identity_storage[identity.id] = identity
+    def _add_identity(self, identity, save_to_storage=True):
+        if save_to_storage:
+            self.identity_storage[identity.id] = identity
+
         self.identities[identity.id] = identity
         for person in identity.persons:
             self.persons[(person.adapter.name, person.user.id)] = identity.id
@@ -50,17 +58,24 @@ class Plugin(Plugin):
         identity = Identity(hashlib.sha1(str(time.time() + random.random()).encode('utf-8')).hexdigest())
         identity.persons.append(Person(adapter, user))
         self._add_identity(identity)
+
+        self.logger.debug('Created identity {}'.format(identity.id))
         return identity
 
     @on_command('bind to (?P<identity_id>[0-9a-f]{40})')
     def bind(self, request, identity_id):
         """Bind current account to a given identity id. To use this command, execute 'build identity' from another account first."""
         to_identity = self.identities.get(identity_id, None)
-        if to_identity is not None:
+
+        if to_identity is None:
+            request.respond('Identity with id {} not found'.format(identity_id))
+        else:
             from_identity = self.get_identity_by_user(request.adapter, request.user)
 
             if from_identity != to_identity:
                 person = Person(request.adapter, request.user)
+                self.logger.debug('Binding {} to identity {}'.format(person, to_identity.id))
+
                 to_identity.persons.append(person)
                 self._add_identity(to_identity)
 
@@ -68,6 +83,7 @@ class Plugin(Plugin):
                 if len(from_identity.persons) == 0:
                     del self.identity_storage[from_identity.id]
                     del self.identities[from_identity.id]
+            request.respond('ok')
 
     @on_command('unbind')
     def unbind(self, request):
@@ -75,7 +91,9 @@ class Plugin(Plugin):
         from_identity = self.get_identity_by_user(request.adapter, request.user)
         person = Person(request.adapter, request.user)
 
+        self.logger.debug('Unbinding {} to identity {}'.format(person, from_identity.id))
         from_identity.persons.remove(person)
+
         if len(from_identity.persons) == 0:
             del self.identity_storage[from_identity.id]
             del self.identities[from_identity.id]
@@ -87,8 +105,13 @@ class Plugin(Plugin):
         if identity is not None:
             request.respond(
                 'Your identities are:\n' + '\n'.join(
-                    '{}) {} ({})'.format(idx, item.user, item.adapter)
-                    for idx, item in enumerate(identity.persons, 1)
+                    '{}) {} ({}, {})'.format(
+                        idx,
+                        contact.user,
+                        contact.adapter,
+                        'online' if contact.adapter.is_online(contact.user) else 'offline'
+                    )
+                    for idx, contact in enumerate(identity.persons, 1)
                 )
             )
 

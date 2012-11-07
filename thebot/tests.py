@@ -30,7 +30,9 @@ class Bot(thebot.Bot):
         kwargs['config_filename'] = 'unexistent.conf'
         super(Bot, self).__init__(*args, **kwargs)
 
+    def close(self):
         self.storage.clear()
+        super(Bot, self).close()
 
 
 class TestAdapter(Adapter):
@@ -395,8 +397,8 @@ def test_identity_create():
 
         eq_(
             'Your identities are:\n'
-            '1) user1 (test)\n'
-            '2) user2 (test)',
+            '1) user1 (test, online)\n'
+            '2) user2 (test, online)',
             adapter._lines[0]
         )
 
@@ -431,7 +433,7 @@ def test_identity_show_my_identities_when_there_is_no_identity():
 
         eq_(
             'Your identities are:\n'
-            '1) user1 (test)',
+            '1) user1 (test, online)',
             adapter._lines[0]
         )
 
@@ -446,7 +448,7 @@ def test_bind_to_another_identity():
 
         eq_(
             'Your identities are:\n'
-            '1) user1 (test)',
+            '1) user1 (test, online)',
             adapter._lines[-1]
         )
 
@@ -454,7 +456,7 @@ def test_bind_to_another_identity():
 
         eq_(
             'Your identities are:\n'
-            '1) user2 (test)',
+            '1) user2 (test, online)',
             adapter._lines[-1]
         )
 
@@ -509,7 +511,7 @@ def test_unbind_from_identity():
 
         eq_(
             'Your identities are:\n'
-            '1) user1 (test)',
+            '1) user1 (test, online)',
             adapter._lines[0]
         )
 

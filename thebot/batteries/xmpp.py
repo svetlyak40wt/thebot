@@ -82,3 +82,6 @@ class Adapter(thebot.Adapter):
 
         self.xmpp_bot.send(msg)
 
+    def is_online(self, user):
+        return len(self.xmpp_bot.client_roster.presence(user.id)) > 0
+

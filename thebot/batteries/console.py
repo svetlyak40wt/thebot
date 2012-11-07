@@ -34,3 +34,5 @@ class Adapter(thebot.Adapter):
         sys.stdout.write('{0}\n'.format(message))
         sys.stdout.flush()
 
+    def is_online(self, user):
+        return True

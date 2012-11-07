@@ -136,7 +136,6 @@ class Plugin(ThreadedPlugin):
         timezones = self.storage.get('timezones', {})
         return timezones.get(user, 'UTC')
 
-
     @on_command('now')
     def now(self, request):
         """Outputs server time and user time."""
@@ -147,3 +146,4 @@ class Plugin(ThreadedPlugin):
         local = times.to_local(now, tz)
 
         request.respond('Server time: {}\nLocal time:{}'.format(now, local))
+
