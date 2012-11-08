@@ -5,6 +5,8 @@ from thebot import Plugin, on_command
 
 
 class Plugin(Plugin):
+    deps = ['identity']
+
     def __init__(self, *args, **kwargs):
         super(Plugin, self).__init__(*args, **kwargs)
         self.user_settings = self.storage.with_prefix('user:')

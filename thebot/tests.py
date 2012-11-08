@@ -517,8 +517,7 @@ def test_unbind_from_identity():
 
 
 def test_notify_first_online_person():
-    # TODO remove settings when dependency will be created
-    with closing(Bot(adapters=[TestAdapter], plugins=['identity', 'notify', 'settings'])) as bot:
+    with closing(Bot(adapters=[TestAdapter], plugins=['notify'])) as bot:
         adapter = bot.get_adapter('test')
         plugin = bot.get_plugin('notify')
 
@@ -550,8 +549,7 @@ def test_notification_priorities():
     class TestAdapter2(TestAdapter):
         name = 'test2'
 
-    # TODO remove settings when dependency will be created
-    with closing(Bot(adapters=[TestAdapter, TestAdapter2], plugins=['identity', 'notify', 'settings'])) as bot:
+    with closing(Bot(adapters=[TestAdapter, TestAdapter2], plugins=['notify'])) as bot:
         adapter1 = bot.get_adapter('test')
         adapter2 = bot.get_adapter('test2')
 
@@ -598,4 +596,17 @@ def test_set_get_settings():
 
         adapter.write('my settings', user='user1')
         eq_('You settings are:\nsome-key = another-value', adapter._lines[-1])
+
+
+def test_load_dependencies():
+    """Plugin notify should depend on settings, and settings plugin in it's
+    turn, depends on identity.
+    """
+
+    with closing(Bot(adapters=[], plugins=['notify'])) as bot:
+        settings = bot.get_plugin('settings')
+        assert settings is not None
+
+        identity = bot.get_plugin('identity')
+        assert identity is not None
 

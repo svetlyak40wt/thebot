@@ -16,6 +16,9 @@ class Person(object):
     def __unicode__(self):
         return '{} ({})'.format(self.user, self.adapter)
 
+    def __str__(self):
+        return self.__unicode__().encode('utf-8')
+
     def __eq__(self, another):
         return self.adapter == another.adapter and self.user == another.user
 
@@ -55,7 +58,11 @@ class Plugin(Plugin):
             self.persons[(person.adapter.name, person.user.id)] = identity.id
 
     def _create_identity(self, adapter, user):
-        identity = Identity(hashlib.sha1(str(time.time() + random.random()).encode('utf-8')).hexdigest())
+        identity = Identity(
+            hashlib.sha1(
+                (str(time.time()) + str(random.random())).encode('utf-8')
+            ).hexdigest()
+        )
         identity.persons.append(Person(adapter, user))
         self._add_identity(identity)
 

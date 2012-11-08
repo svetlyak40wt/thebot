@@ -460,30 +460,47 @@ class Bot(object):
         self.patterns = []
         self.exiting = False
 
-        def load(name, cls='Adapter'):
-            """Returns class by it's name.
+        def create_loader(cls='Adapter'):
+            def load(name):
+                """Returns class by it's name.
 
-            Given a 'irc' string it will try to load the following:
+                Given a 'irc' string it will try to load the following:
 
-            1) from thebot_irc import Adapter
-            2) from thebot.batteries.irc import Adapter
+                1) from thebot_irc import Adapter
+                2) from thebot.batteries.irc import Adapter
 
-            If all of them fail, it will raise ImportError
-            """
+                If all of them fail, it will raise ImportError
+                """
 
-            if isinstance(name, six.string_types):
-                try:
-                    module = importlib.import_module('thebot_' + name)
-                except ImportError:
-                    module = importlib.import_module('thebot.batteries.' + name)
+                if isinstance(name, six.string_types):
+                    try:
+                        module = importlib.import_module('thebot_' + name)
+                    except ImportError:
+                        module = importlib.import_module('thebot.batteries.' + name)
 
-                value = getattr(module, cls)
-                if not hasattr(value, 'name'):
-                    value.name = name
-            else:
-                value = name
+                    value = getattr(module, cls)
+                    if not hasattr(value, 'name'):
+                        value.name = name
+                else:
+                    value = name
 
-            return value
+                return value
+
+            loaded = set()
+
+            def loader(names):
+                """Recursive loader."""
+                for name in names:
+                    if name not in loaded:
+                        cls = load(name)
+                        loaded.add(name)
+
+                        deps = getattr(cls, 'deps', ())
+                        for dep in loader(deps):
+                            yield dep
+                        yield cls
+
+            return loader
 
 
         default_config = """
@@ -515,13 +532,17 @@ class Bot(object):
 
         # now, load plugin and adapter classes, collect their options
         # and parse command line again
+        load_plugins = create_loader('Plugin')
+        load_adapters = create_loader('Adapter')
+
         if adapters is None:
             adapters = config.adapters
-        adapter_classes = [load(a, 'Adapter') for a in adapters]
+        adapter_classes = list(load_adapters(adapters))
 
         if plugins is None:
             plugins = config.plugins
-        plugin_classes = [load(a, 'Plugin') for a in plugins]
+
+        plugin_classes = list(load_plugins(plugins))
         plugin_classes.append(HelpPlugin)
 
         for cls in adapter_classes + plugin_classes:

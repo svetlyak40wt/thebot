@@ -8,6 +8,8 @@ from thebot import Plugin
 
 
 class Plugin(Plugin):
+    deps = ['settings']
+
     def notify(self, identity, message):
         identity_plugin = self.bot.get_plugin('identity')
         settings_plugin = self.bot.get_plugin('settings')
@@ -23,12 +25,14 @@ class Plugin(Plugin):
         # there we'll store sorted by priority
         online_contacts = []
 
-        for contact in identity.persons:
+        for default_priority, contact in enumerate(identity.persons, 1000):
+            # we need increasing default_priority, to keep order of
+            # contacts without preferences
             if contact.adapter.is_online(contact.user):
                 insort(
                     online_contacts,
                     (
-                        priorities.get(contact.adapter.name, 1000),
+                        priorities.get(contact.adapter.name, default_priority),
                         contact
                     )
                 )
