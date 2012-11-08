@@ -30,7 +30,15 @@ def _gen_hashes(tasks):
 
 
 class Plugin(ThreadedPlugin):
+    """Allow to manage a simple todo list.
+
+    By default, all dates are in the UTC.
+    To use your local time everywhere, set timezone like that:
+
+    set timezone Europe/Moscow
+    """
     name = 'todo'
+    deps = ['notify', 'identity', 'settings']
 
     def __init__(self, *args, **kwargs):
         super(Plugin, self).__init__(*args, **kwargs)
@@ -41,27 +49,25 @@ class Plugin(ThreadedPlugin):
         if not self.bot.config.unittest:
             self.start_worker(interval=self.interval)
 
-    def _get_tasks(self, user):
-        return self.storage.get('tasks', defaultdict(list))[user]
+    def _get_tasks(self, identity):
+        return self.storage.get('tasks:{}'.format(identity.id), [])
 
-    def _set_tasks(self, user, tasks):
-        all_tasks = self.storage.get('tasks', defaultdict(list))
-        all_tasks[user] = tasks
-        self.storage['tasks'] = all_tasks
+    def _set_tasks(self, identity, tasks):
+        self.storage['tasks:{}'.format(identity.id)] = tasks
 
     @on_command('remind( me)? at (?P<datetime>.+) to (?P<about>.+)')
     def remind(self, request, datetime, about):
         """Remind about a TODO at given time."""
 
         try:
-            user = request.user.id
+            identity = self.bot.get_plugin('identity').get_identity_by_request(request)
             dt = parse(datetime)
-            tz = self._get_user_timezone(user)
+            tz = self._get_user_timezone(identity)
             dt = times.to_universal(dt, tz)
 
-            tasks = self._get_tasks(user)
-            bisect.insort(tasks, (dt, about, request))
-            self._set_tasks(user, tasks)
+            tasks = self._get_tasks(identity)
+            bisect.insort(tasks, (dt, about, identity.id))
+            self._set_tasks(identity, tasks)
         except Exception as e:
             request.respond('Unable to parse a date: ' + six.text_type(e))
             raise
@@ -71,15 +77,15 @@ class Plugin(ThreadedPlugin):
     @on_command('my tasks')
     def my_tasks(self, request):
         """Show my tasks"""
-        user = request.user.id
-        tasks = self._get_tasks(user)
+        identity = self.bot.get_plugin('identity').get_identity_by_request(request)
+        tasks = self._get_tasks(identity)
 
         if tasks:
-            tz = self._get_user_timezone(user)
+            tz = self._get_user_timezone(identity)
             hashes, min_len = _gen_hashes(tasks)
 
             lines = []
-            for h, (dt, about, request) in zip(hashes, tasks):
+            for h, (dt, about, identity_id) in zip(hashes, tasks):
                 dt = times.to_local(dt, tz)
                 lines.append('{0}) {1:%Y-%m-%d %H:%M} {2}'.format(h[:min_len], dt, about))
 
@@ -89,33 +95,38 @@ class Plugin(ThreadedPlugin):
 
     @on_command('(?P<task_id>[0-9a-z]{2,40}) done')
     def done(self, request, task_id):
+        """Mark given task as done."""
         # TODO add unittests for two cases:
         # * when task_id not found
         # * when there are more than one task which hash started from task_id
-        tasks = self._get_tasks(request.user.id)
+        identity = self.bot.get_plugin('identity').get_identity_by_request(request)
+        tasks = self._get_tasks(identity)
 
         if tasks:
             hashes, min_len = _gen_hashes(tasks)
             filtered_tasks = []
-            for h, (dt, about, r) in zip(hashes, tasks):
+            for h, (dt, about, identity_id) in zip(hashes, tasks):
                 if not h.startswith(task_id):
-                    filtered_tasks.append((dt, about, r))
+                    filtered_tasks.append((dt, about, identity_id))
 
-            self._set_tasks(request.user.id, filtered_tasks)
+            self._set_tasks(identity, filtered_tasks)
         request.respond('done')
 
     def _remind_users_about_their_tasks(self):
         now = times.now()
-        for todos in self.storage.get('tasks', {}).values():
+        tasks_storage = self.storage.with_prefix('tasks:')
+        notify = self.bot.get_plugin('notify').notify
+
+        for identity_id, todos in tasks_storage.items():
             idx = bisect.bisect_left(todos, (now, None, None))
             to_remind = todos[:idx]
 
-            for td, about, request in to_remind:
+            for td, about, id_id in to_remind:
                 delta = (now - td)
                 if delta.seconds <= self.interval:
                     # Remind only if reminder's datetime is between
                     # this and previous checks
-                    request.respond('TODO: {0} ({1})'.format(
+                    notify(identity_id, 'TODO: {0} ({1})'.format(
                         about,
                         hashlib.sha1(about.encode('utf-8')).hexdigest()[:4]
                     ))
@@ -123,26 +134,17 @@ class Plugin(ThreadedPlugin):
     def do_job(self):
         self._remind_users_about_their_tasks()
 
-    @on_command('set my timezone to (?P<timezone>.+/.+)')
-    def set_timezone(self, request, timezone):
-        """Set you timezone"""
-        timezones = self.storage.get('timezones', {})
-        timezones[request.user.id] = timezone
-        self.storage['timezones'] = timezones
-
-        request.respond('done')
-
-    def _get_user_timezone(self, user):
-        timezones = self.storage.get('timezones', {})
-        return timezones.get(user, 'UTC')
+    def _get_user_timezone(self, identity):
+        settings = self.bot.get_plugin('settings')
+        return settings.get(identity.id, 'timezone', 'UTC')
 
     @on_command('now')
     def now(self, request):
         """Outputs server time and user time."""
+        identity = self.bot.get_plugin('identity').get_identity_by_request(request)
 
         now = times.now()
-        user = request.user.id
-        tz = self._get_user_timezone(user)
+        tz = self._get_user_timezone(identity)
         local = times.to_local(now, tz)
 
         request.respond('Server time: {}\nLocal time:{}'.format(now, local))

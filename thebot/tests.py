@@ -303,7 +303,7 @@ def test_todo_remind():
         plugin = bot.get_plugin('todo')
 
 
-        adapter.write('set my timezone to Asia/Shanghai')
+        adapter.write('set timezone Asia/Shanghai')
         # these are the local times
         adapter.write('remind at 2012-09-05 10:00 to do task1')
         adapter.write('remind at 2012-09-05 10:30 to do task2')
@@ -332,7 +332,7 @@ def test_todo_done():
         adapter = bot.get_adapter('test')
 
 
-        adapter.write('set my timezone to Asia/Shanghai')
+        adapter.write('set timezone Asia/Shanghai')
         adapter.write('remind at 2012-09-05 10:00 to do task1')
         adapter.write('remind at 2012-09-05 10:30 to do task2')
         adapter.write('03 done')
@@ -352,11 +352,12 @@ def test_todo_remind_at_uses_timezones():
     with closing(Bot(adapters=[TestAdapter], plugins=[todo.Plugin])) as bot:
         adapter = bot.get_adapter('test')
         plugin = bot.get_plugin('todo')
+        identity_plugin = bot.get_plugin('identity')
+        identity = identity_plugin.get_identity_by_user(adapter, User('some user'))
 
-
-        adapter.write('set my timezone to Asia/Shanghai')
+        adapter.write('set timezone Asia/Shanghai')
         adapter.write('remind at 2012-09-05 00:00 to do task1')
-        tasks = plugin._get_tasks('some user')
+        tasks = plugin._get_tasks(identity)
         eq_(datetime.datetime(2012, 9, 4, 16, 0), tasks[0][0])
 
 

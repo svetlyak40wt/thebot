@@ -123,12 +123,6 @@ class Plugin(Plugin):
                 )
             )
 
-    @on_command('test1')
-    def on_test(self, request):
-        p = self.bot.get_plugin('notify')
-        i = self.get_identity_by_request(request)
-        p.notify(i.id, 'blah')
-
     def get_identity_by_id(self, identity_id):
         return self.identities.get(identity_id)
 
