@@ -9,7 +9,7 @@ import thebot
 import sys
 import re
 
-from thebot import Request, User, Adapter, Plugin, Storage, Config, on_pattern, on_command
+from thebot import Request, User, Adapter, Plugin, Storage, Config, on_pattern, on_command, Stub
 from thebot.batteries import todo
 from thebot.batteries.identity import Person
 from nose.tools import eq_, assert_raises
@@ -609,4 +609,10 @@ def test_load_dependencies():
 
         identity = bot.get_plugin('identity')
         assert identity is not None
+
+def test_stub_methods():
+    stub = Stub('blah')
+    eq_('blah', stub.name)
+    eq_('blah.is_online', '{}'.format((stub.is_online)))
+    eq_(None, stub.is_online())
 

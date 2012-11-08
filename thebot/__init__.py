@@ -303,6 +303,25 @@ class HelpPlugin(Plugin):
 
         request.respond(uptime)
 
+
+class Stub(object):
+    """A stub class to replace objects which can't be unpickled.
+
+    It allows to call any method or access any attribute.
+    """
+    def __init__(self, name):
+        self.name = name
+
+    def __getattr__(self, name):
+        return Stub(self.name + '.' + name)
+
+    def __call__(self, *args, **kwargs):
+        return None
+
+    def __unicode__(self):
+        return self.name
+
+
 class Pickler(pickle.Pickler):
     def __init__(self, file, protocol=None, global_objects=None):
         pickle.Pickler.__init__(self, file, protocol=protocol)
@@ -312,16 +331,22 @@ class Pickler(pickle.Pickler):
         )
 
     def persistent_id(self, obj):
+        if isinstance(obj, Stub):
+            return obj.name
         return self._global_objects.get(id(obj))
 
 
 class Unpickler(pickle.Unpickler):
+    """A custom unpickler, to restore references to adapters, plugins and the bot."""
     def __init__(self, file, global_objects=None):
         pickle.Unpickler.__init__(self, file)
         self._global_objects = global_objects or {}
 
     def persistent_load(self, obj_id):
-        return self._global_objects[obj_id]
+        try:
+            return self._global_objects[obj_id]
+        except KeyError:
+            return Stub(obj_id)
 
 
 class Shelve(shelve.DbfilenameShelf):

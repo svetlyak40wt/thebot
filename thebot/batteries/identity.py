@@ -110,6 +110,7 @@ class Plugin(Plugin):
         """Show all accounts, binded to a current identity."""
         identity = self.get_identity_by_request(request)
         if identity is not None:
+            # TODO rename identitites to accounts
             request.respond(
                 'Your identities are:\n' + '\n'.join(
                     '{}) {} ({}, {})'.format(
@@ -121,6 +122,12 @@ class Plugin(Plugin):
                     for idx, contact in enumerate(identity.persons, 1)
                 )
             )
+
+    @on_command('test1')
+    def on_test(self, request):
+        p = self.bot.get_plugin('notify')
+        i = self.get_identity_by_request(request)
+        p.notify(i.id, 'blah')
 
     def get_identity_by_id(self, identity_id):
         return self.identities.get(identity_id)

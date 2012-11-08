@@ -28,6 +28,7 @@ class Plugin(Plugin):
         for default_priority, contact in enumerate(identity.persons, 1000):
             # we need increasing default_priority, to keep order of
             # contacts without preferences
+
             if contact.adapter.is_online(contact.user):
                 insort(
                     online_contacts,
