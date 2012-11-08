@@ -70,7 +70,7 @@ class Plugin(Plugin):
         if to_identity is None:
             request.respond('Identity with id {} not found'.format(identity_id))
         else:
-            from_identity = self.get_identity_by_user(request.adapter, request.user)
+            from_identity = self.get_identity_by_request(request)
 
             if from_identity != to_identity:
                 person = Person(request.adapter, request.user)
@@ -88,7 +88,7 @@ class Plugin(Plugin):
     @on_command('unbind')
     def unbind(self, request):
         """Unbind current account from the identity."""
-        from_identity = self.get_identity_by_user(request.adapter, request.user)
+        from_identity = self.get_identity_by_request(request)
         person = Person(request.adapter, request.user)
 
         self.logger.debug('Unbinding {} to identity {}'.format(person, from_identity.id))
@@ -101,7 +101,7 @@ class Plugin(Plugin):
     @on_command('show my accounts')
     def show_my_ids(self, request):
         """Show all accounts, binded to a current identity."""
-        identity = self.get_identity_by_user(request.adapter, request.user)
+        identity = self.get_identity_by_request(request)
         if identity is not None:
             request.respond(
                 'Your identities are:\n' + '\n'.join(
@@ -128,4 +128,7 @@ class Plugin(Plugin):
             return self._create_identity(adapter, user)
         else:
             return self.identities.get(identity_id, None)
+
+    def get_identity_by_request(self, request):
+        return self.get_identity_by_user(request.adapter, request.user)
 

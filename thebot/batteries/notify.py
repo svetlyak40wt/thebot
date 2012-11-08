@@ -1,15 +1,19 @@
 # coding: utf-8
 from __future__ import absolute_import, unicode_literals
 
+import types
+
 from bisect import insort
 from thebot import Plugin
 
 
 class Plugin(Plugin):
-    def notify(self, identity_id, message):
+    def notify(self, identity, message):
         identity_plugin = self.bot.get_plugin('identity')
         settings_plugin = self.bot.get_plugin('settings')
-        identity = identity_plugin.get_identity_by_id(identity_id)
+
+        if isinstance(identity, types.StringTypes):
+            identity = identity_plugin.get_identity_by_id(identity)
 
         priorities = settings_plugin.get(identity.id, 'notification-priorities', '')
         priorities = enumerate(item.strip() for item in priorities.split(','))
