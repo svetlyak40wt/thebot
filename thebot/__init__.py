@@ -11,15 +11,10 @@ import re
 import server_reloader
 import shelve
 import six
+import textwrap
 import threading
 import time
 import yaml
-
-try:
-    from collections import MutableMapping
-except ImportError:
-    from UserDict import DictMixin as MutableMapping
-
 
 from . import utils
 
@@ -30,17 +25,57 @@ __version__ = pkg_resources.get_distribution(__name__).version
 EXIT = object()
 
 
+class User(object):
+    def __init__(self, id):
+        self.id = id
+
+    def __unicode__(self):
+        return self.id
+
+    def __eq__(self, another):
+        return self.id == another.id
+
+
+class Room(object):
+    def __init__(self, id):
+        self.id = id
+
+    def __unicode__(self):
+        return self.id
+
+    def __eq__(self, another):
+        return self.id == another.id
+
+
 class Request(object):
-    def __init__(self, message):
+    def __init__(self, adapter, message, user, room=None, refer_by_name=False):
+        self.adapter = adapter
         self.message = message
+        self.user = user
+        self.room = room
+        self.refer_by_name = refer_by_name
+
+    def __unicode__(self):
+        result = '{} from {}'.format(self.message, self.user)
+        if self.room:
+            result += ' at {}'.format(self.room)
+        return result
 
     def respond(self, message):
-        """Bot will use this method to reply directly to the user."""
-        raise NotImplementedError('You have to implement \'respond\' method in you Request class.')
+        self.adapter.send(
+            message,
+            user=self.user,
+            room=self.room,
+            refer_by_name=self.refer_by_name,
+        )
 
     def shout(self, message):
-        """This method will be used to say something to the channel or a chatroom."""
-        self.respond(message)
+        """This method should be used to say something to the channel or a chatroom."""
+        self.adapter.send(
+            message,
+            room=self.room,
+        )
+
 
 
 class Adapter(object):
@@ -48,17 +83,27 @@ class Adapter(object):
         self.bot = bot
         self.callback = callback
 
+    def __unicode__(self):
+        return self.name
+
     def start(self):
         """You have to override this method, if you plugin requires some background activity.
 
         Here you can create a thread, but don't forget to make its `daemon` attrubute equal to True.
         """
 
+    def is_online(self, user):
+        return False
+
 
 class Plugin(object):
     def __init__(self, bot):
         self.bot = bot
         self.storage = self.bot.storage.with_prefix(self.__module__ + ':')
+        self.logger = logging.getLogger('thebot.plugin.' + self.name)
+
+    def __unicode__(self):
+        return self.name
 
     def get_callbacks(self):
         for name in dir(self):
@@ -175,30 +220,42 @@ on_command = _make_routing_decorator(CommandRe)
 
 
 class HelpPlugin(Plugin):
+    """Shows help and basic information about TheBot."""
     name = 'help'
 
+    def __init__(self, *args, **kwargs):
+        super(HelpPlugin, self).__init__(*args, **kwargs)
+        self._started_at = time.time()
+
     @on_command('help')
-    def help(self, request):
-        """Shows a help."""
+    def show_commands(self, request):
+        """Show available commands."""
+
+        lines = ['This is the list of available plugins:']
+
+        def gen_line(plugin):
+            if plugin.__doc__:
+                return '  * {} — {}'.format(plugin.name, plugin.__doc__.split('\n')[0])
+            else:
+                return '  * {}'.format(plugin.name)
+
+        lines.extend(sorted(map(gen_line, self.bot.plugins)))
+
+        lines.append('Use \'help <plugin>\' to learn about each plugin.')
+        request.respond('\n'.join(lines))
+
+
+    @on_command('help (?P<plugin>.*)')
+    def help(self, request, plugin):
+        """Show help on given plugin."""
         lines = []
         commands = []
         reactions = []
 
-        for pattern, callback in self.bot.patterns:
-            if isinstance(pattern, CommandRe):
-                commands.append((pattern, callback))
-            else:
-                reactions.append((pattern, callback))
-
         def gen_docs(pattern_list):
-            current_plugin = None
             previous_callback = None
 
             for pattern, callback in pattern_list:
-                if current_plugin != pattern.plugin_name:
-                    current_plugin = pattern.plugin_name
-                    lines.append('  Plugin \'{}\':'.format(current_plugin))
-
                 docstring = utils.force_unicode(callback.__doc__)
                 if not docstring:
                     docstring = 'No description'
@@ -210,18 +267,89 @@ class HelpPlugin(Plugin):
 
                 previous_callback = callback
 
+        try:
+            plugin = self.bot.get_plugin(plugin)
+        except KeyError as e:
+            request.respond(''.join(e.args))
+            return
+
+        # dividing all patterns to commands and hearings
+        for pattern, callback in plugin.get_callbacks():
+            if isinstance(pattern, CommandRe):
+                commands.append((pattern, callback))
+            else:
+                reactions.append((pattern, callback))
+
+        if plugin.__doc__:
+            splitted = plugin.__doc__.split('\n', 1)
+            doc = ' — {}'.format(splitted[0])
+
+            if len(splitted) == 2:
+                remaining = splitted[1]
+                remaining = remaining.rstrip()
+                remaining = textwrap.dedent(remaining)
+                doc += '\n{}'.format(remaining)
+        else:
+            doc = '.'
+
+        lines.append('Plugin \'{}\'{}\n'.format(plugin.name, doc))
+
         if commands:
-            lines.append('I support following commands:')
+            lines.append('Provides following commands:')
             gen_docs(commands)
 
         if reactions:
             if lines:
                 lines.append('')
 
-            lines.append('And react on following patterns:')
+            lines.append('And reacts on these patterns:')
             gen_docs(reactions)
 
         request.respond('\n'.join(lines))
+
+    @on_command('version')
+    def version(self, request):
+        """Shows TheBot's version."""
+        request.respond('My version is "{}".'.format(__version__))
+
+    @on_command('uptime')
+    def uptime(self, request):
+        """Shows TheBot's uptime."""
+        uptime = time.time() - self._started_at
+        days = int(uptime / (24 * 3600))
+        hours = int((uptime % (24 * 3600) / 3600))
+        minutes = int((uptime % 3600 / 60))
+        seconds = int((uptime % 60))
+
+        uptime ='My uptime is '
+        if days:
+            uptime += '{} day(s)'.format(days)
+        elif hours:
+            uptime += '{} hour(s)'.format(hours)
+        elif minutes:
+            uptime += '{} minute(s).'.format(minutes)
+        else:
+            uptime += '{} second(s).'.format(seconds)
+
+        request.respond(uptime)
+
+
+class Stub(object):
+    """A stub class to replace objects which can't be unpickled.
+
+    It allows to call any method or access any attribute.
+    """
+    def __init__(self, name):
+        self.name = name
+
+    def __getattr__(self, name):
+        return Stub(self.name + '.' + name)
+
+    def __call__(self, *args, **kwargs):
+        return None
+
+    def __unicode__(self):
+        return self.name
 
 
 class Pickler(pickle.Pickler):
@@ -233,16 +361,22 @@ class Pickler(pickle.Pickler):
         )
 
     def persistent_id(self, obj):
+        if isinstance(obj, Stub):
+            return obj.name
         return self._global_objects.get(id(obj))
 
 
 class Unpickler(pickle.Unpickler):
+    """A custom unpickler, to restore references to adapters, plugins and the bot."""
     def __init__(self, file, global_objects=None):
         pickle.Unpickler.__init__(self, file)
         self._global_objects = global_objects or {}
 
     def persistent_load(self, obj_id):
-        return self._global_objects[obj_id]
+        try:
+            return self._global_objects[obj_id]
+        except KeyError:
+            return Stub(obj_id)
 
 
 class Shelve(shelve.DbfilenameShelf):
@@ -272,7 +406,7 @@ class Shelve(shelve.DbfilenameShelf):
         self.dict[key] = value
 
 
-class Storage(MutableMapping):
+class Storage(utils.MutableMapping):
     def __init__(self, filename, prefix='', global_objects=None):
         """Specials are used to restore references to some nonserializable objects,
         such as TheBot itself.
@@ -381,28 +515,47 @@ class Bot(object):
         self.patterns = []
         self.exiting = False
 
-        def load(value, cls='Adapter'):
-            """Returns class by it's name.
+        def create_loader(cls='Adapter'):
+            def load(name):
+                """Returns class by it's name.
 
-            Given a 'irc' string it will try to load the following:
+                Given a 'irc' string it will try to load the following:
 
-            1) from thebot_irc import Adapter
-            2) from thebot.batteries.irc import Adapter
+                1) from thebot_irc import Adapter
+                2) from thebot.batteries.irc import Adapter
 
-            If all of them fail, it will raise ImportError
-            """
-            if isinstance(value, six.string_types):
-                try:
-                    module = importlib.import_module('thebot_' + value)
-                except ImportError:
-                    module = importlib.import_module('thebot.batteries.' + value)
+                If all of them fail, it will raise ImportError
+                """
 
-                loaded_value = getattr(module, cls)
-                if not hasattr(loaded_value, 'name'):
-                    loaded_value.name = value
-                return loaded_value
+                if isinstance(name, six.string_types):
+                    try:
+                        module = importlib.import_module('thebot_' + name)
+                    except ImportError:
+                        module = importlib.import_module('thebot.batteries.' + name)
 
-            return value
+                    value = getattr(module, cls)
+                    if not hasattr(value, 'name'):
+                        value.name = name
+                else:
+                    value = name
+
+                return value
+
+            loaded = set()
+
+            def loader(names):
+                """Recursive loader."""
+                for name in names:
+                    if name not in loaded:
+                        cls = load(name)
+                        loaded.add(name)
+
+                        deps = getattr(cls, 'deps', ())
+                        for dep in loader(deps):
+                            yield dep
+                        yield cls
+
+            return loader
 
 
         default_config = """
@@ -434,19 +587,17 @@ class Bot(object):
 
         # now, load plugin and adapter classes, collect their options
         # and parse command line again
+        load_plugins = create_loader('Plugin')
+        load_adapters = create_loader('Adapter')
 
         if adapters is None:
-            adapter_classes = map(lambda a: load(a, 'Adapter'), config.adapters)
-        else:
-            # we've got adapters argument (it is used for testing purpose
-            adapter_classes = adapters
+            adapters = config.adapters
+        adapter_classes = list(load_adapters(adapters))
 
         if plugins is None:
-            plugin_classes = [load(a, 'Plugin') for a in  config.plugins]
-        else:
-            # we've got adapters argument (it is used for testing purpose
-            plugin_classes = plugins
+            plugins = config.plugins
 
+        plugin_classes = list(load_plugins(plugins))
         plugin_classes.append(HelpPlugin)
 
         for cls in adapter_classes + plugin_classes:
@@ -480,8 +631,6 @@ class Bot(object):
         for key, value in config_dict.items():
             setattr(self.config, key, value)
 
-        self.storage = Storage(self.config.storage_filename, global_objects=dict(bot=self))
-
         logging.basicConfig(
             filename=self.config.log_filename,
             format='[%(asctime)s] %(levelname)s %(name)s: %(message)s',
@@ -489,11 +638,15 @@ class Bot(object):
         )
 
         # adapters and plugins initialization
+        global_objects = dict(bot=self)
 
         for adapter in adapter_classes:
             a = adapter(self, callback=self.on_request)
+            global_objects[a.name] = a
             a.start()
             self.adapters.append(a)
+
+        self.storage = Storage(self.config.storage_filename, global_objects=global_objects)
 
         for plugin_cls in plugin_classes:
             p = plugin_cls(self)
@@ -564,12 +717,12 @@ class Bot(object):
         for adapter in self.adapters:
             if getattr(adapter, 'name', None) == name:
                 return adapter
-        raise KeyError('Adapter {} not found'.format(name))
+        raise KeyError('Adapter {} not found.'.format(name))
 
     def get_plugin(self, name):
         """Returns plugin by it's name."""
         for plugin in self.plugins:
             if getattr(plugin, 'name', None) == name:
                 return plugin
-        raise KeyError('Plugin {} not found'.format(name))
+        raise KeyError('Plugin {} not found.'.format(name))
 
