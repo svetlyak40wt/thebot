@@ -1,25 +1,45 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from __future__ import unicode_literals, absolute_import
+from __future__ import unicode_literals, absolute_import, print_function
 
 import thebot
 import sys
+import server_reloader
 
 from time import sleep
-from contextlib import closing
-from thebot import autoreload
+
+bot = None
+
 
 def run_bot(*args):
-    with closing(thebot.Bot(args)) as bot:
-        try:
-            while not bot.exiting:
-                sleep(1)
-        except KeyboardInterrupt:
-            pass
+    global bot
+    bot = thebot.Bot(args)
+
+    while not bot.exiting:
+        sleep(1)
+
+    bot.close()
+
+
+def on_reload():
+    print('Reloading code…')
+    bot.close()
+
+
+def on_exit():
+    print('Exiting…')
+    bot.close()
+
 
 def main():
-    autoreload.main(run_bot, tuple(sys.argv[1:]))
+    server_reloader.main(
+        run_bot,
+        args=tuple(sys.argv[1:]),
+        before_reload=on_reload,
+        before_exit=on_exit,
+        watch_on_files=False,
+    )
 
 
 if __name__ == '__main__':

@@ -8,6 +8,8 @@ from thebot import Plugin, on_command
 
 
 class Plugin(Plugin):
+    """Uses Google\'s calculator to do some smart things."""
+
     @on_command('(calc|calculate|convert|math)( me)? (?P<expression>.+)')
     def math(self, request, expression):
         """Use Google's calculator to do some math."""

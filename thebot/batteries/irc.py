@@ -7,53 +7,63 @@ import time
 import thebot
 import threading
 
-
-class IRCRequest(thebot.Request):
-    def __init__(self, message, bot, nick, channel, direct):
-        super(IRCRequest, self).__init__(message)
-        self.bot = bot
-        self.nick = nick
-        self.channel = channel
-        self.direct = direct
-
-    def get_user(self):
-        return (self.channel, self.nick)
-
-    def respond(self, message):
-        self._post(message, self.direct)
-
-    def shout(self, message):
-        self._post(message, False)
-
-    def _post(self, message, respond_directly=True):
-        logger = logging.getLogger('adapter.irc.request')
-        adapter = self.bot.get_adapter('irc')
-        irc_connection = adapter.irc_connection
-
-        sleep_time = 0.05
-        max_sleep_time = 1
-
-        for line in message.split('\n'):
-            if respond_directly:
-                line = self.nick + ': ' + line
-
-            logger.debug('Sending "{}" to {} at {}'.format(
-                line, self.nick, self.channel
-            ))
-            irc_connection.respond(thebot.utils.force_str(line), channel=self.channel, nick=self.nick)
-
-            # this is a protection from the flood
-            # if we'll send to often, then server may decide to
-            # logout us
-            time.sleep(min(sleep_time, max_sleep_time))
-            sleep_time *= 2
+from collections import defaultdict
+from functools import wraps
 
 
 class IRCConnection(irc.IRCConnection):
+    def __init__(self, *args, **kwargs):
+        super(IRCConnection, self).__init__(*args, **kwargs)
+        # a map nick -> list of events
+        # to signal about received online status
+        self._ison_requests = defaultdict(list)
+        # a map nick -> True/False
+        # if True, then this nick is online
+        self._online_statuses = {}
+
     def get_logger(self, logger_name, filename):
         """We override this method because don't want to have a separate log for irc messages.
         """
         return logging.getLogger(logger_name)
+
+    def dispatch_patterns(self):
+        callbacks = list(super(IRCConnection, self).dispatch_patterns())
+        callbacks.append(
+            (re.compile(':(?:.*?)\s+303(?:.*?):(?P<nicks>.*)'), self.on_ison_response)
+        )
+        def threaded_callback(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                thread = threading.Thread(target=func, args=args, kwargs=kwargs)
+                thread.daemon = True
+                thread.start()
+            return wrapper
+
+        callbacks = tuple(
+            (pattern, threaded_callback(callback))
+            for pattern, callback
+                in callbacks
+        )
+        return callbacks
+
+    def is_online(self, nick):
+        """This method sends ISON request and waits for response."""
+        event = threading.Event()
+        self._ison_requests[nick].append(event)
+        self._online_statuses[nick] = False
+
+        self.send('ISON {}'.format(nick))
+        event.wait(timeout=3)
+        return self._online_statuses[nick]
+
+    def on_ison_response(self, nicks):
+        logger = logging.getLogger('thebot.adapter.irc')
+        logger.debug('These nicks are online: ' + nicks)
+
+        for nick in nicks.split(' '):
+            self._online_statuses[nick] = True
+            for event in self._ison_requests[nick]:
+                event.set()
 
 
 class Adapter(thebot.Adapter):
@@ -109,7 +119,13 @@ class Adapter(thebot.Adapter):
             direct = nick_re.match(message) is not None
             message = nick_re.sub('', message)
 
-            request = IRCRequest(message, self.bot, nick, channel, direct)
+            request = thebot.Request(
+                self,
+                message,
+                thebot.User(nick),
+                thebot.Room(channel) if channel else None,
+                refer_by_name=direct
+            )
             return self.callback(request, direct=direct)
 
         conn = IRCConnection(host, port, nick)
@@ -126,4 +142,33 @@ class Adapter(thebot.Adapter):
                 conn.join(channel)
             conn.enter_event_loop()
 
+    def send(self, message, user=None, room=None, refer_by_name=False):
+        logger = logging.getLogger('thebot.adapter.irc')
+
+        sleep_time = 0.05
+        max_sleep_time = 1
+
+        for line in message.split('\n'):
+            if refer_by_name:
+                line = user.id + ', ' + line
+
+            logger.debug('Sending "{}" to {} at {}'.format(
+                line,
+                'everybody' if user is None else user,
+                'private channel' if room is None else room,
+            ))
+            self.irc_connection.respond(
+                thebot.utils.force_str(line),
+                nick=user.id if user else None,
+                channel=room.id if room else None,
+            )
+
+            # this is a protection from the flood
+            # if we'll send to often, then server may decide to
+            # logout us
+            time.sleep(min(sleep_time, max_sleep_time))
+            sleep_time *= 2
+
+    def is_online(self, user):
+        return self.irc_connection.is_online(user.id)
 

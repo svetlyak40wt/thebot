@@ -1,3 +1,4 @@
+# coding: utf-8
 from __future__ import absolute_import, unicode_literals
 
 import sleekxmpp
@@ -5,27 +6,15 @@ import thebot
 import threading
 
 
-class XMPPRequest(thebot.Request):
-    def __init__(self, message, bot, _from):
-        super(XMPPRequest, self).__init__(message)
-        self.bot = bot
-        self._from = _from
-
-    def get_user(self):
-        """Returns user's JID without resource name."""
-        return self._from.rsplit('/', 1)[0]
-
-    def respond(self, message):
-        msg = sleekxmpp.stanza.message.Message()
-        msg['to'] = self._from
-        msg['type'] = 'chat'
-        msg['body'] = message
-
-        adapter = self.bot.get_adapter('xmpp')
-        adapter.xmpp_bot.send(msg)
+class User(thebot.User):
+    def __init__(self, jid):
+        self.id, self.resource = jid.split('/')
 
 
 class Adapter(thebot.Adapter):
+    ignore_jids = [
+        'lastmail.ya.ru/Яндекс.Информер',
+    ]
     @staticmethod
     def get_options(parser):
         group = parser.add_argument_group('XMPP options')
@@ -63,8 +52,12 @@ class Adapter(thebot.Adapter):
             """
 
             if msg['type'] in ('chat', 'normal'):
-                if msg['from'] != msg['to']:
-                    request = XMPPRequest(msg['body'], self.bot, unicode(msg['from']))
+                if msg['from'] != msg['to'] and msg['from'] not in self.ignore_jids:
+                    request = thebot.Request(
+                        self,
+                        msg['body'],
+                        user=User(unicode(msg['from']))
+                    )
                     self.callback(request)
 
 
@@ -81,4 +74,14 @@ class Adapter(thebot.Adapter):
         self.xmpp_bot.connect()
         self.xmpp_bot.process(block=True)
 
+    def send(self, message, user=None, room=None, refer_by_name=False):
+        msg = sleekxmpp.stanza.message.Message()
+        msg['to'] = user.id + '/' + user.resource
+        msg['type'] = 'chat'
+        msg['body'] = message
+
+        self.xmpp_bot.send(msg)
+
+    def is_online(self, user):
+        return len(self.xmpp_bot.client_roster.presence(user.id)) > 0
 

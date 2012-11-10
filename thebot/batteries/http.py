@@ -2,31 +2,40 @@ from __future__ import absolute_import, unicode_literals
 
 import irc
 import logging
-import thebot
 import threading
 
 from wsgiref.simple_server import make_server, WSGIRequestHandler
+from .. import Request, Adapter, __version__
+from ..utils import force_str
+from cgi import parse_qs
 
-
-class HttpRequest(thebot.Request):
+class HttpRequest(Request):
     def __init__(self, environ, start_response):
         super(HttpRequest, self).__init__(environ['PATH_INFO'])
         self.environ = environ
         self.start_response = start_response
         self.response_sent = False
+        self.method = environ['REQUEST_METHOD']
+
+        if self.method == 'POST':
+            content_length = int(environ.get('CONTENT_LENGTH', 0))
+            request_body = environ['wsgi.input'].read(content_length)
+            self.POST = parse_qs(request_body)
+        else:
+            self.POST = None
 
     def respond(self, message):
         if self.response_sent:
             raise RuntimeError('Response to this HTTP request already sent.')
 
-        status = '200 OK'
+        status = b'200 OK'
         headers = [
-            ('Server', 'TheBot/' + thebot.__version__),
-            ('Content-type', 'text/plain; charset=utf-8'),
+            (b'Server', b'TheBot/' + force_str(__version__)),
+            (b'Content-type', b'text/plain; charset=utf-8'),
         ]
 
         write = self.start_response(status, headers)
-        write(message)
+        write(force_str(message))
         self.response_sent = True
 
 
@@ -37,7 +46,7 @@ class IRCConnection(irc.IRCConnection):
         return logging.getLogger(logger_name)
 
 
-class Adapter(thebot.Adapter):
+class Adapter(Adapter):
     @staticmethod
     def get_options(parser):
         group = parser.add_argument_group('IRC options')
