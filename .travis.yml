@@ -8,4 +8,6 @@ install:
   - pip install nose==1.2.1
   - pip install -e .
 # command to run tests
-script: nosetests --config none
+script:
+  - rm setup.cfg
+  - nosetests
