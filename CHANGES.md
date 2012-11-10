@@ -1,3 +1,45 @@
+0.3.0
+-----
+
+This release makes TheBot more usable, as it introduces a new
+system to tie user's data not to their accounts in separate
+instant messengers, but to a unique ids.
+
+It is recommended to use new plugin 'identity', to retrive user's
+id by request, and to tie all data to this id.
+
+Another great feature, is ability to send a notification to first
+adapter where user concidered as "online". Each plugin now can
+implement method 'is_online', which used by 'notify' plugin.
+
+And finally, 'settings' plugin was added, to create a single
+storage for user's preferences.
+
+See 'todo' plugin as example, it uses all these three new plugins
+to handle it's job.
+
+### Major changes
+
+* Added recursive dependency handling for plugins and adapters.
+* Working is_online methods for irc and xmpp plugins.
+* Three new plugins were added 'identity', 'settings' and 'notify'.
+* Now plugin 'todo' work with identity to store data and notifies user via 'notify' pluging.
+* Added a new adapter 'mail' to talk with TheBot via email.
+
+### Minor changes
+
+* Help system was refactored and now shows each plugin's docstring as it's documentation.
+* Now each plugin has it's own self.logger.
+* Fixed issue with missing adapter, when restoring state from the database.
+* Builtin autoreloader was replaced with external 'server-reloader' module.
+
+### Small fixes
+
+* Fixed issue when bot does not saved db state to disk on code reload and Ctrl-C.
+* Added option --reload-on-changes to watch on code changes, without it, server does not reload itself.
+* Tests were fixed to close storage.
+* JID of lastmail.ya.ru bot was added to ignore list.
+
 0.2.1
 -----
 
