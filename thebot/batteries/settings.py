@@ -5,6 +5,7 @@ from thebot import Plugin, on_command
 
 
 class Plugin(Plugin):
+    """Stores user settings."""
     deps = ['identity']
 
     def __init__(self, *args, **kwargs):

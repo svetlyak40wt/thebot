@@ -7,7 +7,6 @@ import hashlib
 import six
 
 from dateutil.parser import parse
-from collections import defaultdict
 from thebot import ThreadedPlugin, on_command
 
 
@@ -30,7 +29,7 @@ def _gen_hashes(tasks):
 
 
 class Plugin(ThreadedPlugin):
-    """Allow to manage a simple todo list.
+    """Allows to manage a simple todo list.
 
     By default, all dates are in the UTC.
     To use your local time everywhere, set timezone like that:

@@ -9,6 +9,7 @@ from thebot import Plugin, on_command
 
 
 class Plugin(Plugin):
+    """Retrives images from the web."""
     @on_command('(image|img)( me)? (?P<query>.+)')
     def image(self, request, query):
         """Google random image on given topic."""

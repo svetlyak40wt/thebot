@@ -15,3 +15,9 @@ else:
         if isinstance(value, unicode):
             value = value.encode('utf-8')
         return value
+
+try:
+    from collections import MutableMapping
+except ImportError:
+    from UserDict import DictMixin as MutableMapping
+

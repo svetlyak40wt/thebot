@@ -64,6 +64,11 @@ class TestAdapter(Adapter):
 
 
 class TestPlugin(Plugin):
+    """A simple test plugin.
+
+    With extended documentation.
+    Which can be multiline, and will be shown as plugin's help.
+    """
     name = 'test'
     @on_pattern('cat')
     def i_like_cats(self, request):
@@ -86,7 +91,7 @@ def test_install_plugins():
     with closing(Bot(adapters=[], plugins=[TestPlugin])) as bot:
         eq_(0, len(bot.adapters))
         eq_(2, len(bot.plugins)) # Help plugin is added by default
-        eq_(6, len(bot.patterns))
+        eq_(7, len(bot.patterns))
 
 
 def test_one_line():
@@ -188,21 +193,44 @@ def test_help_command():
         adapter.write('help')
         eq_(
             [
-                'I support following commands:\n'
-                '  Plugin \'test\':\n'
+                'This is the list of available plugins:\n'
+                '  * help — Shows help and basic information about TheBot.\n'
+                '  * test — A simple test plugin.\n'
+                'Use \'help <plugin>\' to learn about each plugin.'
+            ],
+            adapter._lines
+        )
+
+
+def test_help_plugin_command():
+    with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
+        adapter = bot.adapters[0]
+
+        adapter.write('help test')
+        eq_(
+            [
+                'Plugin \'test\' — A simple test plugin.\n'
+                '\n'
+                'With extended documentation.\n'
+                'Which can be multiline, and will be shown as plugin\'s help.\n'
+                '\n'
+                'Provides following commands:\n'
                 '    find (?P<this>.*) — Making a fake search of the term.\n'
                 '    search (?P<this>.*)\n'
-                '  Plugin \'help\':\n'
-                '    help — Shows a help.\n'
-                '    uptime — Shows TheBot\'s uptime.\n'
-                '    version — Shows TheBot\'s version.\n'
                 '\n'
-                'And react on following patterns:\n'
-                '  Plugin \'test\':\n'
+                'And reacts on these patterns:\n'
                 '    cat — Shows how TheBot likes cats.'
             ],
             adapter._lines
         )
+
+
+def test_help_plugin_not_found():
+    with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
+        adapter = bot.adapters[0]
+
+        adapter.write('help blah')
+        eq_('Plugin blah not found.', adapter._lines[-1])
 
 
 def test_delete_from_storage():

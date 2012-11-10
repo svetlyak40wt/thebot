@@ -11,15 +11,10 @@ import re
 import server_reloader
 import shelve
 import six
+import textwrap
 import threading
 import time
 import yaml
-
-try:
-    from collections import MutableMapping
-except ImportError:
-    from UserDict import DictMixin as MutableMapping
-
 
 from . import utils
 
@@ -225,6 +220,7 @@ on_command = _make_routing_decorator(CommandRe)
 
 
 class HelpPlugin(Plugin):
+    """Shows help and basic information about TheBot."""
     name = 'help'
 
     def __init__(self, *args, **kwargs):
@@ -232,27 +228,34 @@ class HelpPlugin(Plugin):
         self._started_at = time.time()
 
     @on_command('help')
-    def help(self, request):
-        """Shows a help."""
+    def show_commands(self, request):
+        """Show available commands."""
+
+        lines = ['This is the list of available plugins:']
+
+        def gen_line(plugin):
+            if plugin.__doc__:
+                return '  * {} — {}'.format(plugin.name, plugin.__doc__.split('\n')[0])
+            else:
+                return '  * {}'.format(plugin.name)
+
+        lines.extend(sorted(map(gen_line, self.bot.plugins)))
+
+        lines.append('Use \'help <plugin>\' to learn about each plugin.')
+        request.respond('\n'.join(lines))
+
+
+    @on_command('help (?P<plugin>.*)')
+    def help(self, request, plugin):
+        """Show help on given plugin."""
         lines = []
         commands = []
         reactions = []
 
-        for pattern, callback in self.bot.patterns:
-            if isinstance(pattern, CommandRe):
-                commands.append((pattern, callback))
-            else:
-                reactions.append((pattern, callback))
-
         def gen_docs(pattern_list):
-            current_plugin = None
             previous_callback = None
 
             for pattern, callback in pattern_list:
-                if current_plugin != pattern.plugin_name:
-                    current_plugin = pattern.plugin_name
-                    lines.append('  Plugin \'{}\':'.format(current_plugin))
-
                 docstring = utils.force_unicode(callback.__doc__)
                 if not docstring:
                     docstring = 'No description'
@@ -264,15 +267,42 @@ class HelpPlugin(Plugin):
 
                 previous_callback = callback
 
+        try:
+            plugin = self.bot.get_plugin(plugin)
+        except KeyError as e:
+            request.respond(''.join(e.args))
+            return
+
+        # dividing all patterns to commands and hearings
+        for pattern, callback in plugin.get_callbacks():
+            if isinstance(pattern, CommandRe):
+                commands.append((pattern, callback))
+            else:
+                reactions.append((pattern, callback))
+
+        if plugin.__doc__:
+            splitted = plugin.__doc__.split('\n', 1)
+            doc = ' — {}'.format(splitted[0])
+
+            if len(splitted) == 2:
+                remaining = splitted[1]
+                remaining = remaining.rstrip()
+                remaining = textwrap.dedent(remaining)
+                doc += '\n{}'.format(remaining)
+        else:
+            doc = '.'
+
+        lines.append('Plugin \'{}\'{}\n'.format(plugin.name, doc))
+
         if commands:
-            lines.append('I support following commands:')
+            lines.append('Provides following commands:')
             gen_docs(commands)
 
         if reactions:
             if lines:
                 lines.append('')
 
-            lines.append('And react on following patterns:')
+            lines.append('And reacts on these patterns:')
             gen_docs(reactions)
 
         request.respond('\n'.join(lines))
@@ -376,7 +406,7 @@ class Shelve(shelve.DbfilenameShelf):
         self.dict[key] = value
 
 
-class Storage(MutableMapping):
+class Storage(utils.MutableMapping):
     def __init__(self, filename, prefix='', global_objects=None):
         """Specials are used to restore references to some nonserializable objects,
         such as TheBot itself.
@@ -687,12 +717,12 @@ class Bot(object):
         for adapter in self.adapters:
             if getattr(adapter, 'name', None) == name:
                 return adapter
-        raise KeyError('Adapter {} not found'.format(name))
+        raise KeyError('Adapter {} not found.'.format(name))
 
     def get_plugin(self, name):
         """Returns plugin by it's name."""
         for plugin in self.plugins:
             if getattr(plugin, 'name', None) == name:
                 return plugin
-        raise KeyError('Plugin {} not found'.format(name))
+        raise KeyError('Plugin {} not found.'.format(name))
 

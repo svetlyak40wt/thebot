@@ -30,6 +30,15 @@ class Identity(object):
 
 
 class Plugin(Plugin):
+    """Allows to join several accounts from different chats.
+
+    This plugin is used by other plugins, to retrive a user's UID.
+    You can join several accounts from different adapters, and
+    all of them will be binded to the same UID.
+
+    That way, user's information can be accessible from different
+    instant messengers.
+    """
     def __init__(self, *args, **kwargs):
         super(Plugin, self).__init__(*args, **kwargs)
         self.identities = {}

@@ -8,6 +8,13 @@ from thebot import Plugin
 
 
 class Plugin(Plugin):
+    """Allows other plugins to notify user via different adapters.
+
+    This plugin has no it's own commands but you can control
+    it's behaviour via notification-priorities settings, like that:
+
+    set notification-priorities xmpp,irc,email
+    """
     deps = ['settings']
 
     def notify(self, identity, message):
