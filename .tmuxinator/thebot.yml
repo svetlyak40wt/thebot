@@ -1,5 +1,6 @@
 project_name: TheBot
-project_root: ~/git/thebot
+#project_root: ~/git/thebot
+project_root: ~/projects/dev-thebot
 #pre: source env/bin/activate
 tabs:
   - editor:

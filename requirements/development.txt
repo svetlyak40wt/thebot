@@ -7,8 +7,8 @@ Pygments==1.5
 pyrepl==0.8.4
 wmctrl==0.1
 mock==1.0.0
-nose-progressive==1.3
 
+-e git+git://github.com/svetlyak40wt/nose-progressive.git@python3#egg=nose-progressive
 -e git+git://github.com/svetlyak40wt/tdaemon.git@develop#egg=tdaemon
 -e git+git://github.com/svetlyak40wt/pip-tools.git@aaef5ca40263a03a93746deb5db79f30275d03ed#egg=pip_tools-dev
 -e git+git://github.com/svetlyak40wt/nose-notify-tmux.git#egg=nose-notify-tmux
