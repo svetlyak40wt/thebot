@@ -1,3 +1,8 @@
+0.3.3
+-----
+
+* Fixed missing import in http adapter.
+
 0.3.2
 -----
 

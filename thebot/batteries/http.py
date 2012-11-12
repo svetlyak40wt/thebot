@@ -5,7 +5,7 @@ import logging
 import threading
 
 from wsgiref.simple_server import make_server, WSGIRequestHandler
-from .. import Request, Adapter, __version__
+from .. import Request, Adapter, User, __version__
 from ..utils import force_str
 from cgi import parse_qs
 
