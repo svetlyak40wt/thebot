@@ -16,7 +16,7 @@ import threading
 import time
 import yaml
 
-from . import utils
+from .utils import MutableMapping, force_str, printable
 
 __version__ = pkg_resources.get_distribution(__name__).version
 
@@ -25,6 +25,7 @@ __version__ = pkg_resources.get_distribution(__name__).version
 EXIT = object()
 
 
+@printable
 class User(object):
     def __init__(self, id):
         self.id = id
@@ -36,6 +37,7 @@ class User(object):
         return self.id == another.id
 
 
+@printable
 class Room(object):
     def __init__(self, id):
         self.id = id
@@ -47,6 +49,7 @@ class Room(object):
         return self.id == another.id
 
 
+@printable
 class Request(object):
     def __init__(self, adapter, message, user, room=None, refer_by_name=False):
         self.adapter = adapter
@@ -78,6 +81,7 @@ class Request(object):
 
 
 
+@printable
 class Adapter(object):
     def __init__(self, bot, callback):
         self.bot = bot
@@ -96,6 +100,7 @@ class Adapter(object):
         return False
 
 
+@printable
 class Plugin(object):
     def __init__(self, bot):
         self.bot = bot
@@ -177,6 +182,7 @@ class ThreadedPlugin(Plugin):
             on_stop()
 
 
+@printable
 class Re(object):
     def __init__(self, pattern):
         self.pattern = pattern
@@ -334,6 +340,7 @@ class HelpPlugin(Plugin):
         request.respond(uptime)
 
 
+@printable
 class Stub(object):
     """A stub class to replace objects which can't be unpickled.
 

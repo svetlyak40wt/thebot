@@ -6,8 +6,10 @@ import time
 import random
 
 from thebot import Plugin, on_command
+from thebot.utils import printable
 
 
+@printable
 class Person(object):
     def __init__(self, adapter, user):
         self.adapter = adapter
@@ -15,9 +17,6 @@ class Person(object):
 
     def __unicode__(self):
         return '{} ({})'.format(self.user, self.adapter)
-
-    def __str__(self):
-        return self.__unicode__().encode('utf-8')
 
     def __eq__(self, another):
         return self.adapter == another.adapter and self.user == another.user

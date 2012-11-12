@@ -2,6 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import types
+import six
 
 from bisect import insort
 from thebot import Plugin
@@ -21,7 +22,7 @@ class Plugin(Plugin):
         identity_plugin = self.bot.get_plugin('identity')
         settings_plugin = self.bot.get_plugin('settings')
 
-        if isinstance(identity, types.StringTypes):
+        if isinstance(identity, six.string_types):
             identity = identity_plugin.get_identity_by_id(identity)
 
         priorities = settings_plugin.get(identity.id, 'notification-priorities', '')

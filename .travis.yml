@@ -6,7 +6,8 @@ python:
 install:
   - pip install -r requirements/base.txt --use-mirrors
   - pip install nose==1.2.1
-  - pip install nose-progressive==1.3
   - pip install -e .
 # command to run tests
-script: nosetests
+script:
+  - rm setup.cfg
+  - nosetests
