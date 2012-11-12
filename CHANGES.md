@@ -1,3 +1,13 @@
+0.3.2
+-----
+
+* Http adapter was fixed to use newer Request.
+
+0.3.1
+-----
+
+* Bot was fixed to run on Python3.
+
 0.3.0
 -----
 

@@ -10,8 +10,8 @@ from ..utils import force_str
 from cgi import parse_qs
 
 class HttpRequest(Request):
-    def __init__(self, environ, start_response):
-        super(HttpRequest, self).__init__(environ['PATH_INFO'])
+    def __init__(self, adapter, environ, start_response):
+        super(HttpRequest, self).__init__(adapter, environ['PATH_INFO'], user=User('http service'))
         self.environ = environ
         self.start_response = start_response
         self.response_sent = False
@@ -86,7 +86,7 @@ class Adapter(Adapter):
         thread.start()
 
     def _wsgi_handler(self, environ, start_response):
-        request = HttpRequest(environ, start_response)
+        request = HttpRequest(self, environ, start_response)
         self.callback(request)
         if not request.response_sent:
             request.respond('')
