@@ -46,6 +46,7 @@ Available adapters
 * [xmpp](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/xmpp.py);
 * [http](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/http.py);
 * [console](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/console.py);
+* [mail](https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/mail.py);
 
 ### External
 
