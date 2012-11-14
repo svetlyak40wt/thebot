@@ -1,0 +1,3 @@
+-e git+git@github.com:svetlyak40wt/thebot-pomodoro.git#egg=thebot-pomodoro
+-e git+git@github.com:svetlyak40wt/thebot-instagram.git#egg=thebot-instagram
+-e git+git@github.com:svetlyak40wt/thebot-translate.git#egg=thebot-translate
