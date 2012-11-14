@@ -13,3 +13,4 @@
 /thebot.conf
 /.noseids
 /.tdaemon.state*
+/docs/build
