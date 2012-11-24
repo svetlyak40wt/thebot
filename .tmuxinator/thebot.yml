@@ -2,10 +2,6 @@ project_name: dev-thebot
 project_root: ~/projects/thebot/dev
 tabs:
   - editor:
-#        layout: main-horizontal
-#        panes:
-#            - vim
-#            - source env/bin/activate && tdaemon nosetests
         - vim
   - tests:
         - source env/bin/activate
