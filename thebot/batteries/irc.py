@@ -75,7 +75,7 @@ class Adapter(thebot.Adapter):
             help='Server to connect. Default: irc.freenode.net.'
         )
         group.add_argument(
-            '--irc-port', default=6667,
+            '--irc-port', default=6667, type=int,
             help='Port to connect. Default: 6667.'
         )
         group.add_argument(
