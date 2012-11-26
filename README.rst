@@ -46,7 +46,8 @@ Then, join this channel and send `thebot, instagram on` message. To list all sup
 Available adapters
 ------------------
 
-### Builtins
+Builtins
+^^^^^^^^
 
 * `irc <https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/irc.py>`_;
 * `xmpp <https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/xmpp.py>`_;
@@ -54,20 +55,23 @@ Available adapters
 * `console <https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/console.py>`_;
 * `mail <https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/mail.py>`_;
 
-### External
+External
+^^^^^^^^
 
 * Be the first, who will write the one!
 
 Available plugins
 -----------------
 
-### Builtins
+Builtins
+^^^^^^^^
 
 * `image <https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/image.py>`_ — uses Google Image and `mustachify.me <http://mustachify.me>`_, to search images and to make them funny.
 * `math <https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/math.py>`_ — uses Google Calculator to do some math and convert currencies.
 * `todo <https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/todo.py>`_ — a simple task manager which will store your tasks and send you reminders.
 
-### External
+External
+^^^^^^^^
 
 * `github <https://github.com/svetlyak40wt/thebot-github>`_ — allows to track new issues, pull requests and comments.
 * `instagram <https://github.com/svetlyak40wt/thebot-instagram>`_ — posts new popular images from Instagram.
