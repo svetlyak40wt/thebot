@@ -5,7 +5,7 @@ This is a general purpose chat bot, extensible in varios ways.
 The reason, why it was written is because NodeJS and CoffeeScript are sucks and
 Hubot uses them.
 
-The Bot is written in orthodox Python and can be installed via `pip`.
+The Bot is written in orthodox Python and can be installed via `pip`_.
 It's functionality can be extended by installation of additional python packages,
 you don't have to clone a repository and hack some code there.
 
@@ -39,8 +39,8 @@ To turn on more useful plugins, install them via pip. For example, to install In
     pip install 'git+git://github.com/svetlyak40wt/thebot-instagram.git'
     thebot --adapter irc --plugins instagram --irc-host irc.freenode.net --irc-channels somechannel --irc-nick thebot
 
-Then, join this channel and send `thebot, instagram on` message. To list all supported command, issue the message
-`thebot, help`.
+Then, join this channel and send ``thebot, instagram on`` message. To list all supported command, issue the message
+``thebot, help``.
 
 
 Available adapters
