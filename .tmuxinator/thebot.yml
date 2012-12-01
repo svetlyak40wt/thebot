@@ -1,18 +1,13 @@
-project_name: TheBot
-#project_root: ~/git/thebot
-project_root: ~/projects/dev-thebot
-#pre: source env/bin/activate
+project_name: dev-thebot
+project_root: ~/projects/thebot/dev
 tabs:
   - editor:
-        layout: main-horizontal
-        panes:
-            - vim
-            - source env/bin/activate && tdaemon nosetests
+        - vim
+  - tests:
+        - source env/bin/activate
+        - tdaemon nosetests
   - server:
     - source env/bin/activate
     - thebot
-  # - tests:
-  #   - source env/bin/activate
-  #   - tdaemon nosetests
   - log: tail -f thebot.log
   - shell:

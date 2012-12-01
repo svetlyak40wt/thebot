@@ -49,10 +49,10 @@ class TestAdapter(Adapter):
     def write(self, input_line, user='some user'):
         """This method is for test purpose.
         """
-        name = 'Thebot, '
+        name = 'TheBot, '
 
         if input_line.startswith(name):
-            self.callback(Request(self, input_line[len(name):], user=User(user)), direct=True)
+            self.callback(Request(self, input_line[len(name):], user=User(user), refer_by_name=True), direct=True)
         else:
             self.callback(Request(self, input_line, user=User(user)), direct=False)
 
@@ -102,7 +102,7 @@ def test_one_line():
         adapter.write('I have a cat')
         eq_(adapter._lines, ['I like cats!!!'])
 
-        adapter.write('find Umputun')
+        adapter.write('TheBot, find Umputun')
         eq_(adapter._lines[-1], 'I found Umputun')
 
 
@@ -113,7 +113,7 @@ def test_unknown_command():
         adapter = bot.adapters[0]
 
         eq_(adapter._lines, [])
-        adapter.write('Thebot, some command')
+        adapter.write('TheBot, some command')
         eq_(adapter._lines, ['I don\'t know command "some command".'])
 
 
@@ -128,7 +128,7 @@ def test_exception_raised_if_plugin_returns_not_none():
     with closing(Bot(adapters=[TestAdapter], plugins=[BadPlugin])) as bot:
         adapter = bot.adapters[0]
 
-        assert_raises(RuntimeError, adapter.write, 'do')
+        assert_raises(RuntimeError, adapter.write, 'TheBot, do')
 
 
 def test_simple_storage():
@@ -172,6 +172,7 @@ def test_storage_nesting():
         eq_(['second:one'], sorted(storage.keys()))
         eq_(['second:one'], sorted(list(storage)))
 
+
 def test_storage_deep_nesting():
     with closing(Storage(STORAGE_FILENAME)) as storage:
         storage.clear()
@@ -190,7 +191,7 @@ def test_help_command():
     with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
         adapter = bot.adapters[0]
 
-        adapter.write('help')
+        adapter.write('TheBot, help')
         eq_(
             [
                 'This is the list of available plugins:\n'
@@ -206,7 +207,7 @@ def test_help_plugin_command():
     with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
         adapter = bot.adapters[0]
 
-        adapter.write('help test')
+        adapter.write('TheBot, help test')
         eq_(
             [
                 'Plugin \'test\' — A simple test plugin.\n'
@@ -229,7 +230,7 @@ def test_help_plugin_not_found():
     with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
         adapter = bot.adapters[0]
 
-        adapter.write('help blah')
+        adapter.write('TheBot, help blah')
         eq_('Plugin blah not found.', adapter._lines[-1])
 
 
@@ -260,7 +261,6 @@ def test_storage_is_iterable_as_dict():
         )
 
 
-
 def test_storage_restores_bot_attribute():
     with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
         adapter = bot.get_adapter('test')
@@ -289,10 +289,10 @@ def test_todo_plugin():
     with closing(Bot(adapters=[TestAdapter], plugins=[todo.Plugin])) as bot:
         adapter = bot.get_adapter('test')
 
-        adapter.write('remind at 2012-10-05 to Celebrate my birthday')
-        adapter.write('remind at 2012-12-18 to Celebrate daughter\'s birthday')
-        adapter.write('remind at 2012-09-01 to Write a doc for TheBot')
-        adapter.write('my tasks')
+        adapter.write('TheBot, remind at 2012-10-05 to Celebrate my birthday')
+        adapter.write('TheBot, remind at 2012-12-18 to Celebrate daughter\'s birthday')
+        adapter.write('TheBot, remind at 2012-09-01 to Write a doc for TheBot')
+        adapter.write('TheBot, my tasks')
 
         eq_(
             [
@@ -311,11 +311,11 @@ def test_todo_plugin_for_different_users():
     with closing(Bot(adapters=[TestAdapter], plugins=[todo.Plugin])) as bot:
         adapter = bot.get_adapter('test')
 
-        adapter.write('remind at 2012-10-05 to Celebrate my birthday', user='blah')
-        adapter.write('remind at 2012-12-18 to Celebrate daughter\'s birthday', user='minor')
+        adapter.write('TheBot, remind at 2012-10-05 to Celebrate my birthday', user='blah')
+        adapter.write('TheBot, remind at 2012-12-18 to Celebrate daughter\'s birthday', user='minor')
 
         adapter._lines[:] = []
-        adapter.write('my tasks', user='minor')
+        adapter.write('TheBot, my tasks', user='minor')
 
         eq_(
             [
@@ -331,10 +331,10 @@ def test_todo_remind():
         plugin = bot.get_plugin('todo')
 
 
-        adapter.write('set timezone Asia/Shanghai')
+        adapter.write('TheBot, set timezone Asia/Shanghai')
         # these are the local times
-        adapter.write('remind at 2012-09-05 10:00 to do task1')
-        adapter.write('remind at 2012-09-05 10:30 to do task2')
+        adapter.write('TheBot, remind at 2012-09-05 10:00 to do task1')
+        adapter.write('TheBot, remind at 2012-09-05 10:30 to do task2')
 
         with mock.patch.object(times, 'now') as now:
             # this is a server time in UTC
@@ -360,13 +360,13 @@ def test_todo_done():
         adapter = bot.get_adapter('test')
 
 
-        adapter.write('set timezone Asia/Shanghai')
-        adapter.write('remind at 2012-09-05 10:00 to do task1')
-        adapter.write('remind at 2012-09-05 10:30 to do task2')
-        adapter.write('03 done')
+        adapter.write('TheBot, set timezone Asia/Shanghai')
+        adapter.write('TheBot, remind at 2012-09-05 10:00 to do task1')
+        adapter.write('TheBot, remind at 2012-09-05 10:30 to do task2')
+        adapter.write('TheBot, 03 done')
 
         adapter._lines[:] = []
-        adapter.write('my tasks')
+        adapter.write('TheBot, my tasks')
 
         eq_(
             [
@@ -383,8 +383,8 @@ def test_todo_remind_at_uses_timezones():
         identity_plugin = bot.get_plugin('identity')
         identity = identity_plugin.get_identity_by_user(adapter, User('some user'))
 
-        adapter.write('set timezone Asia/Shanghai')
-        adapter.write('remind at 2012-09-05 00:00 to do task1')
+        adapter.write('TheBot, set timezone Asia/Shanghai')
+        adapter.write('TheBot, remind at 2012-09-05 00:00 to do task1')
         tasks = plugin._get_tasks(identity)
         eq_(datetime.datetime(2012, 9, 4, 16, 0), tasks[0][0])
 
@@ -416,13 +416,13 @@ def test_identity_create():
     with closing(Bot(adapters=[TestAdapter], plugins=['identity'])) as bot:
         adapter = bot.get_adapter('test')
 
-        adapter.write('build identity', user='user1')
+        adapter.write('TheBot, build identity', user='user1')
         identity = _get_identity_id(adapter)
 
-        adapter.write('bind to {}'.format(identity), user='user2')
+        adapter.write('TheBot, bind to {}'.format(identity), user='user2')
 
         adapter._lines[:] = []
-        adapter.write('show my accounts', user='user1')
+        adapter.write('TheBot, show my accounts', user='user1')
 
         eq_(
             'Your identities are:\n'
@@ -437,10 +437,10 @@ def test_identity_get_by_xxx():
         adapter = bot.get_adapter('test')
         plugin = bot.get_plugin('identity')
 
-        adapter.write('build identity', user='user1')
+        adapter.write('TheBot, build identity', user='user1')
         identity = _get_identity_id(adapter)
 
-        adapter.write('bind to {}'.format(identity), user='user2')
+        adapter.write('TheBot, bind to {}'.format(identity), user='user2')
 
         eq_(identity, plugin.get_identity_by_id(identity).id)
         eq_(identity, plugin.get_identity_by_user(adapter, User('user1')).id)
@@ -458,13 +458,14 @@ def test_identity_show_my_identities_when_there_is_no_identity():
         adapter = bot.get_adapter('test')
 
         adapter._lines[:] = []
-        adapter.write('show my accounts', user='user1')
+        adapter.write('TheBot, show my accounts', user='user1')
 
         eq_(
             'Your identities are:\n'
             '1) user1 (test, online)',
             adapter._lines[0]
         )
+
 
 def test_bind_to_another_identity():
     """Testing bind to another identity, when there is already exists another identity."""
@@ -473,7 +474,7 @@ def test_bind_to_another_identity():
         plugin = bot.get_plugin('identity')
 
         adapter._lines[:] = []
-        adapter.write('show my accounts', user='user1')
+        adapter.write('TheBot, show my accounts', user='user1')
 
         eq_(
             'Your identities are:\n'
@@ -481,7 +482,7 @@ def test_bind_to_another_identity():
             adapter._lines[-1]
         )
 
-        adapter.write('show my accounts', user='user2')
+        adapter.write('TheBot, show my accounts', user='user2')
 
         eq_(
             'Your identities are:\n'
@@ -495,10 +496,10 @@ def test_bind_to_another_identity():
         eq_(2, len(plugin.persons))
 
         # now let's bind user2 to user1
-        adapter.write('build identity', user='user1')
+        adapter.write('TheBot, build identity', user='user1')
         identity = _get_identity_id(adapter)
 
-        adapter.write('bind to {}'.format(identity), 'user2')
+        adapter.write('TheBot, bind to {}'.format(identity), 'user2')
 
         # now there should be only one identity
         eq_(1, len(plugin.identities))
@@ -509,6 +510,7 @@ def test_bind_to_another_identity():
             [identity, identity],
             list(plugin.persons.values())
         )
+
 
 def test_persons_equality():
     with closing(Bot(adapters=[TestAdapter], plugins=['identity'])) as bot:
@@ -530,13 +532,13 @@ def test_unbind_from_identity():
     with closing(Bot(adapters=[TestAdapter], plugins=['identity'])) as bot:
         adapter = bot.get_adapter('test')
 
-        adapter.write('build identity', user='user1')
+        adapter.write('TheBot, build identity', user='user1')
         identity = _get_identity_id(adapter)
-        adapter.write('bind to {}'.format(identity), user='user2')
-        adapter.write('unbind', user='user2')
+        adapter.write('TheBot, bind to {}'.format(identity), user='user2')
+        adapter.write('TheBot, unbind', user='user2')
 
         adapter._lines[:] = []
-        adapter.write('show my accounts', user='user1')
+        adapter.write('TheBot, show my accounts', user='user1')
 
         eq_(
             'Your identities are:\n'
@@ -550,9 +552,9 @@ def test_notify_first_online_person():
         adapter = bot.get_adapter('test')
         plugin = bot.get_plugin('notify')
 
-        adapter.write('build identity', user='user1')
+        adapter.write('TheBot, build identity', user='user1')
         identity_id = _get_identity_id(adapter)
-        adapter.write('bind to {}'.format(identity_id), user='user2')
+        adapter.write('TheBot, bind to {}'.format(identity_id), user='user2')
         # now we have identity with two users
 
         adapter._lines[:] = []
@@ -584,9 +586,9 @@ def test_notification_priorities():
 
         plugin = bot.get_plugin('notify')
 
-        adapter1.write('build identity', user='user1')
+        adapter1.write('TheBot, build identity', user='user1')
         identity_id = _get_identity_id(adapter1)
-        adapter2.write('bind to {}'.format(identity_id), user='user2')
+        adapter2.write('TheBot, bind to {}'.format(identity_id), user='user2')
         # now we have identity with two users
 
         adapter1._lines[:] = []
@@ -596,7 +598,7 @@ def test_notification_priorities():
         eq_(True, plugin.notify(identity_id, 'hello 1'))
         eq_('hello 1', adapter1._lines[-1])
 
-        adapter1.write('set notification-priorities test2,test', user='user1')
+        adapter1.write('TheBot, set notification-priorities test2,test', user='user1')
 
         # now second adapter has higher priority
         eq_(True, plugin.notify(identity_id, 'hello 2'))
@@ -608,22 +610,22 @@ def test_set_get_settings():
         adapter = bot.get_adapter('test')
         plugin = bot.get_plugin('settings')
 
-        adapter.write('build identity', user='user1')
+        adapter.write('TheBot, build identity', user='user1')
         identity_id = _get_identity_id(adapter)
-        adapter.write('bind to {}'.format(identity_id), user='user2')
+        adapter.write('TheBot, bind to {}'.format(identity_id), user='user2')
         # now we have identity with two users
 
         plugin.set(identity_id, 'some-key', 'blah')
         eq_('blah', plugin.get(identity_id, 'some-key'))
 
-        adapter.write('set some-key some-value', user='user1')
+        adapter.write('TheBot, set some-key some-value', user='user1')
         eq_('some-value', plugin.get(identity_id, 'some-key'))
 
         plugin.set(identity_id, 'some-key', 'another-value')
-        adapter.write('get some-key', user='user2')
+        adapter.write('TheBot, get some-key', user='user2')
         eq_('some-key = another-value', adapter._lines[-1])
 
-        adapter.write('my settings', user='user1')
+        adapter.write('TheBot, my settings', user='user1')
         eq_('You settings are:\nsome-key = another-value', adapter._lines[-1])
 
 
@@ -639,9 +641,30 @@ def test_load_dependencies():
         identity = bot.get_plugin('identity')
         assert identity is not None
 
+
 def test_stub_methods():
     stub = Stub('blah')
     eq_('blah', stub.name)
     eq_('blah.is_online', '{}'.format((stub.is_online)))
     eq_(None, stub.is_online())
+
+
+def test_direct_commands_require_bot_name_infront():
+    """Direct commands should start from 'TheBot, …'.
+
+    For example if there is a rule 'on_command("version")', then bot
+    should react only on 'TheBot, version', and ignore 'version'.
+    """
+    with closing(Bot(adapters=[TestAdapter], plugins=[TestPlugin])) as bot:
+        adapter = bot.get_adapter('test')
+
+        eq_(adapter._lines, [])
+
+        adapter.write('TheBot, search Umputun')
+        eq_(adapter._lines[0], 'I found Umputun')
+
+        adapter.write('search Umputun')
+        # there still one line, because bot ignored second command
+        eq_(1, len(adapter._lines))
+
 

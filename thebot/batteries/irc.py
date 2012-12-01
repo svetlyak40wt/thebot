@@ -75,7 +75,7 @@ class Adapter(thebot.Adapter):
             help='Server to connect. Default: irc.freenode.net.'
         )
         group.add_argument(
-            '--irc-port', default=6667,
+            '--irc-port', default=6667, type=int,
             help='Port to connect. Default: 6667.'
         )
         group.add_argument(
@@ -116,7 +116,15 @@ class Adapter(thebot.Adapter):
             message = thebot.utils.force_unicode(message)
             nick_re = re.compile('^%s[:,\s]\s*' % conn.nick)
 
-            direct = nick_re.match(message) is not None
+            refer_by_name = nick_re.match(message) is not None
+
+            if channel is None:
+                # if there is no channel, then users writes directly to TheBot
+                direct = True
+            else:
+                # in channel, he have to specify bot's username before the command
+                direct = refer_by_name
+
             message = nick_re.sub('', message)
 
             request = thebot.Request(
@@ -124,7 +132,7 @@ class Adapter(thebot.Adapter):
                 message,
                 thebot.User(nick),
                 thebot.Room(channel) if channel else None,
-                refer_by_name=direct
+                refer_by_name=refer_by_name,
             )
             return self.callback(request, direct=direct)
 
