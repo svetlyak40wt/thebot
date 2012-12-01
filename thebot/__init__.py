@@ -191,7 +191,7 @@ class Re(object):
     def __unicode__(self):
         return self.pattern
 
-    def match(self, message):
+    def match(self, message, direct):
         if self._re is not None:
             return self._re.match(message)
 
@@ -206,6 +206,10 @@ class CommandRe(Re):
     def __init__(self, pattern):
         super(CommandRe, self).__init__(pattern)
         self._re = re.compile('^' + pattern + '$')
+
+    def match(self, message, direct):
+        if direct:
+            return super(CommandRe, self).match(message, direct)
 
 
 def _make_routing_decorator(pattern_cls):
@@ -702,7 +706,7 @@ class Bot(object):
             self.exiting = True
         else:
             for pattern, callback in self.patterns:
-                match = pattern.match(request.message)
+                match = pattern.match(request.message, direct)
                 if match is not None:
                     result = callback(request, **match.groupdict())
                     if result is not None:
