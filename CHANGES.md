@@ -1,3 +1,9 @@
+0.3.4
+-----
+
+* Fixed direct message processing and bot's name processing in IRC adapter.
+* Force int type for --irc-port. Closes #3. Thanks to @sashka.
+
 0.3.3
 -----
 
