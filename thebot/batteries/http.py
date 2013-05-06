@@ -39,17 +39,10 @@ class HttpRequest(Request):
         self.response_sent = True
 
 
-class IRCConnection(irc.IRCConnection):
-    def get_logger(self, logger_name, filename):
-        """We override this method because don't want to have a separate log for irc messages.
-        """
-        return logging.getLogger(logger_name)
-
-
 class Adapter(Adapter):
     @staticmethod
     def get_options(parser):
-        group = parser.add_argument_group('IRC options')
+        group = parser.add_argument_group('HTTP options')
         group.add_argument(
             '--http-host', default='127.0.0.1',
             help='IP to bind to. Default: 127.0.0.1.'
