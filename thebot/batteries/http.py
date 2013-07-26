@@ -17,6 +17,8 @@ class HttpRequest(Request):
         self.response_sent = False
         self.method = environ['REQUEST_METHOD']
 
+        self.GET = parse_qs(environ['QUERY_STRING'])
+
         if self.method == 'POST':
             content_length = int(environ.get('CONTENT_LENGTH', 0))
             request_body = environ['wsgi.input'].read(content_length)
