@@ -2,8 +2,8 @@ anyjson==0.3.3
 irckit==0.1.1
 requests==0.14.1
 sleekxmpp==1.1.10
-dnspython==1.10.0
-times==0.6
+dnspython==1.11.0
+times==0.6.1
 pytz==2012f
 six==1.2.0
 PyYAML==3.10
