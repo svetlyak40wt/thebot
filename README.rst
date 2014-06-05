@@ -96,6 +96,12 @@ them and come back to ask The Bot to forgive you treason.
 * https://github.com/toastdriven/toastbot uses irckit и gevent
 * https://github.com/gbin/err too complex and over-engeneered architecture, but has plugins.
 
+TODO
+----
+
+* Implement method ``create_request`` in ``irc`` and ``xmpp`` adapters, to be able to use
+  them as a notification channel in the ``thebot-webooks`` plugin.
+
 .. _pip: http://pypi.python.org/pypi/pip
 .. |travis| image:: https://secure.travis-ci.org/svetlyak40wt/thebot.png
 .. _travis: http://travis-ci.org/svetlyak40wt/thebot
