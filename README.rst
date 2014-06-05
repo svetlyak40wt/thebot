@@ -76,6 +76,9 @@ External
 * `github <https://github.com/svetlyak40wt/thebot-github>`_ — allows to track new issues, pull requests and comments.
 * `instagram <https://github.com/svetlyak40wt/thebot-instagram>`_ — posts new popular images from Instagram.
 * `translate <https://github.com/svetlyak40wt/thebot-translate>`_ — translates texts from one language to another.
+* `pomodoro <https://github.com/svetlyak40wt/thebot-pomodoro>`_ — powerful `pomodoro timer <http://pomodorotechnique.com/>`_ to boost your productivity.
+* `draftin <https://github.com/svetlyak40wt/thebot-draftin>`_ — accepts callbacks from draftin.com and runs a shell command to publish post into the static generated blog.
+* `webhooks <https://github.com/svetlyak40wt/thebot-webhooks>`_ — configurable webhooks, to run any number of commands on HTTP POST or GET requests.
 * Add yours plugins to this list!
 
 
