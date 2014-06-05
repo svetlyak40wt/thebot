@@ -19,14 +19,18 @@ class Request(thebot.Request):
 
     def respond(self, message):
         subject = self.subject
-        if not subject.lower().startswith('re: '):
+
+        # if there wasn't any message, then probably this request
+        # was created just to notify somebody on some event
+        if self.message and not subject.lower().startswith('re: '):
             subject = 'Re: ' + subject
 
+        citate = ''
+        if self.message:
+            citate = '> {}\n'.format(self.message)
+            
         self.adapter.send(
-            '> {}\n{}'.format(
-                self.message,
-                message
-            ),
+            citate + message,
             self.user,
             subject=subject,
             in_reply_to=self.message_id,
@@ -150,6 +154,13 @@ class Adapter(thebot.Adapter):
         config = self.bot.config.imap
         return Imap(config['host'], int(config['port']), config['username'], config['password'])
 
+    def create_request(self,
+                       message=None,
+                       email=None,
+                       message_id=None,
+                       subject=None):
+        return Request(self, message, email, message_id, subject)
+
     def _fetch_messages(self):
         logger = logging.getLogger('thebot.batteries.mail')
 
@@ -171,12 +182,11 @@ class Adapter(thebot.Adapter):
                             lines = (line.strip() for line in lines)
                             lines = list(filter(None, lines))
                             first_line = lines[0]
-                            request = Request(
-                                self,
-                                first_line,
-                                from_email,
-                                message['Message-Id'],
-                                message['Subject'],
+                            request = self.create_request(
+                                message=first_line,
+                                email=from_email,
+                                message_id=message['Message-Id'],
+                                subject=message['Subject'],
                             )
                             self.callback(request, direct=True)
 
