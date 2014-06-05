@@ -1,8 +1,11 @@
 project_name: dev-thebot
-project_root: ~/projects/thebot/dev
-tabs:
+project_root: ~/git/thebot
+base-index: 1
+
+windows:
   - editor:
-        - vim
+        - emacs
+  - shell:
   - tests:
         - source env/bin/activate
         - tdaemon nosetests
@@ -10,4 +13,3 @@ tabs:
     - source env/bin/activate
     - thebot
   - log: tail -f thebot.log
-  - shell:
