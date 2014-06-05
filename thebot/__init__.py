@@ -704,9 +704,14 @@ class Bot(object):
             for pattern, callback in self.patterns:
                 match = pattern.match(request.message)
                 if match is not None:
-                    result = callback(request, **match.groupdict())
-                    if result is not None:
-                        raise RuntimeError('Plugin {0} should not return response directly. Use request.respond(some message).')
+                    try:
+                        result = callback(request, **match.groupdict())
+                    except Exception, e:
+                        logging.getLogger('thebot.core.on_request').exception(
+                            'During processing "{0}" request'.format(request))
+                    else:
+                        if result is not None:
+                            raise RuntimeError('Plugin {0} should not return response directly. Use request.respond(some message).')
                     break
             else:
                 if direct:
