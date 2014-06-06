@@ -706,7 +706,7 @@ class Bot(object):
                 if match is not None:
                     try:
                         result = callback(request, **match.groupdict())
-                    except Exception, e:
+                    except Exception:
                         logging.getLogger('thebot.core.on_request').exception(
                             'During processing "{0}" request'.format(request))
                     else:

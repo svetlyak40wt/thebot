@@ -1,12 +1,20 @@
+import os.path
 import sys
 
 from setuptools import setup, find_packages
 
 
 if sys.version > '3':
-    requirements = open('requirements/production3.txt').readlines()
+    req_filename = 'requirements/production3.txt'
 else:
-    requirements = open('requirements/production.txt').readlines()
+    req_filename = 'requirements/production.txt'
+
+if os.path.exists(req_filename):
+    requirements = open(req_filename).readlines()
+else:
+    # this branch should work only when running under the tox
+    requirements = []
+
 
 setup(
     name='thebot',
@@ -28,7 +36,6 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     packages=find_packages(),
-    package_data={'thebot': ['requirements/*.txt']},
     scripts=['scripts/thebot'],
     install_requires=requirements,
 )
