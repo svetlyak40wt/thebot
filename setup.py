@@ -28,6 +28,7 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     packages=find_packages(),
+    package_data={'thebot': ['requirements/*.txt']},
     scripts=['scripts/thebot'],
     install_requires=requirements,
 )
