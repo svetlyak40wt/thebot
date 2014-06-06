@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 
 import email
+import email.message
 import imaplib
 import smtplib
 import logging
