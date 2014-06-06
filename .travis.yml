@@ -1,10 +1,12 @@
 language: python
 python:
   - "2.7"
-  - "3.2"
+  - "3.3"
 # commands to install dependencies
 install:
   - pip install -r requirements/base.txt --use-mirrors
+  - if [[ $TRAVIS_PYTHON_VERSION == 2* ]]; then pip install -r requirements/production.txt --use-mirrors; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3* ]]; then pip install -r requirements/production3.txt --use-mirrors; fi
   - pip install nose==1.2.1
   - pip install -e .
 # command to run tests

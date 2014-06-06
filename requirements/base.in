@@ -2,7 +2,6 @@ anyjson
 irckit
 requests
 sleekxmpp
-dnspython
 times
 pytz
 six

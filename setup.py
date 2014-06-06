@@ -1,4 +1,12 @@
+import sys
+
 from setuptools import setup, find_packages
+
+
+if sys.version > '3':
+    requirements = open('requirements/production3.txt').readlines()
+else:
+    requirements = open('requirements/production.txt').readlines()
 
 setup(
     name='thebot',
@@ -21,5 +29,5 @@ setup(
     ],
     packages=find_packages(),
     scripts=['scripts/thebot'],
-    install_requires = open('requirements/base.txt').readlines()
+    install_requires=requirements,
 )

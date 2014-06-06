@@ -151,6 +151,7 @@ class Adapter(thebot.Adapter):
         thread.start()
 
     def get_imap(self):
+        import pdb; pdb.set_trace()  # DEBUG
         config = self.bot.config.imap
         return Imap(config['host'], int(config['port']), config['username'], config['password'])
 
