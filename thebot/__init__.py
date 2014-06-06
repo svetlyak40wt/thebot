@@ -504,7 +504,22 @@ class Config(object):
         return 'Config: {}'.format(self._data)
 
     def __getattr__(self, name):
-        return self._data[name]
+        head = name
+        tail = ''
+        data = self._data
+        
+        while head:
+            if head in data:
+                data = data[head]
+                head = tail
+                tail = ''
+            else:
+                if '_' in head:
+                    head, part = head.rsplit('_', 1)
+                    tail = part + '_' + tail
+                else:
+                    raise AttributeError('Attribute {0} does not exist'.format(name))
+        return data
 
 
 class Bot(object):
