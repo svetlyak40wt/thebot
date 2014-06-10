@@ -659,6 +659,9 @@ class Bot(object):
             level=logging.DEBUG if self.config.verbose else logging.WARNING,
         )
 
+        with open(self.config.pid_filename, 'w') as f:
+            f.write(str(os.getpid()))
+
         # adapters and plugins initialization
         global_objects = dict(bot=self)
 
@@ -691,6 +694,10 @@ class Bot(object):
         parser.add_argument(
             '--log-filename', default='thebot.log',
             help='Log\'s filename. Default: thebot.log.'
+        )
+        parser.add_argument(
+            '--pid-filename', default='thebot.pid',
+            help='TheBot\'s pid filename. Default: thebot.pid.'
         )
         parser.add_argument(
             '--storage-filename', default='thebot.storage',

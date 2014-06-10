@@ -1,3 +1,10 @@
+0.4.0
+-----
+
+* Added new command line option `--pid-filename`. The bot will
+  write pid of the main worker's process. This allows to shut it down
+  gracefully when bot was started by a process manager like circusd.
+
 0.3.3
 -----
 
