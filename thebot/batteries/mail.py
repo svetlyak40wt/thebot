@@ -226,7 +226,7 @@ class Adapter(thebot.Adapter):
         response['Subject'] = subject
         if in_reply_to:
             response['In-Reply-To'] = in_reply_to
-        response.set_payload(message.encode('utf8'))
+        response.set_payload(message.encode('utf8'), 'utf-8')
 
         server.sendmail(from_email, to_email, response.as_string())
         server.quit()
