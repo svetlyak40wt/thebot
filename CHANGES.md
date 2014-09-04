@@ -1,3 +1,9 @@
+0.4.1
+-----
+
+* Fixed issue in mail adapter. It didn't add a Content-Type
+  header and sometimes text were rendered incorrectly in the Gmail.
+
 0.4.0
 -----
 

@@ -18,7 +18,7 @@ else:
 
 setup(
     name='thebot',
-    version='0.4.0',
+    version='0.4.1',
     description=(
     ),
     keywords='chat irc xmpp basecamp jira fun',
