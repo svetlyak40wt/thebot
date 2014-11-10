@@ -1,8 +1,24 @@
+import os.path
+import sys
+
 from setuptools import setup, find_packages
+
+
+if sys.version > '3':
+    req_filename = 'requirements/production3.txt'
+else:
+    req_filename = 'requirements/production.txt'
+
+if os.path.exists(req_filename):
+    requirements = open(req_filename).readlines()
+else:
+    # this branch should work only when running under the tox
+    requirements = []
+
 
 setup(
     name='thebot',
-    version='0.3.3',
+    version='0.4.1',
     description=(
     ),
     keywords='chat irc xmpp basecamp jira fun',
@@ -21,5 +37,5 @@ setup(
     ],
     packages=find_packages(),
     scripts=['scripts/thebot'],
-    install_requires = open('requirements/base.txt').readlines()
+    install_requires=requirements,
 )

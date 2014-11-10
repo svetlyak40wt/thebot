@@ -403,6 +403,23 @@ xmpp:
     eq_('thebot@ya.ru', cfg.xmpp_jid)
 
 
+def test_get_config_values_from_nested_structures():
+    cfg = Config()
+    cfg.read_from_string("""
+xmpp:
+    jid: thebot@ya.ru
+    notify:
+       adapter: irc
+       to_username: art
+       
+""")
+    eq_('thebot@ya.ru', cfg.xmpp['jid'])
+    eq_('thebot@ya.ru', cfg.xmpp_jid)
+
+    eq_('irc', cfg.xmpp_notify_adapter)
+    eq_('art', cfg.xmpp_notify_to_username)
+
+
 def _get_identity_id(adapter):
     match = re.match(
         r'.*bind to ([0-9a-f]{40}).*',

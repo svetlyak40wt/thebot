@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 
 import email
+import email.message
 import imaplib
 import smtplib
 import logging
@@ -151,8 +152,15 @@ class Adapter(thebot.Adapter):
         thread.start()
 
     def get_imap(self):
-        config = self.bot.config.imap
-        return Imap(config['host'], int(config['port']), config['username'], config['password'])
+        cfg = self.bot.config
+        return Imap(cfg.imap_host, int(cfg.imap_port), cfg.imap_username, cfg.imap_password)
+
+    def create_request(self,
+                       message=None,
+                       email=None,
+                       message_id=None,
+                       subject=None):
+        return Request(self, message, email, message_id, subject)
 
     def create_request(self,
                        message=None,
@@ -202,20 +210,20 @@ class Adapter(thebot.Adapter):
         logger = logging.getLogger('thebot.batteries.mail')
         logger.debug('Sending email to "{}" in reply to "{}"'.format(to_email, in_reply_to))
 
-        config = self.bot.config.smtp
+        cfg = self.bot.config
 
-        port = int(config['port'])
+        port = int(cfg.smtp_port)
         if port == 25:
-            server = smtplib.SMTP(config['host'], port)
+            server = smtplib.SMTP(cfg.smtp_host, port)
         else:
-            server = smtplib.SMTP_SSL(config['host'], port)
+            server = smtplib.SMTP_SSL(cfg.smtp_host, port)
 
-        server.login(config['username'], config['password'])
+        server.login(cfg.smtp_username, cfg.smtp_password)
         #server.set_debuglevel(1)
 
-        from_email = config.get('from')
-        if from_email is None and '@' in config['username']:
-            from_email = config['username']
+        from_email = getattr(cfg, 'smtp_from', None)
+        if from_email is None and '@' in cfg.smtp_username:
+            from_email = cfg.smtp_username
         else:
             raise RuntimeError('Please, specify "--smtp-from" option.')
 
@@ -225,7 +233,7 @@ class Adapter(thebot.Adapter):
         response['Subject'] = subject
         if in_reply_to:
             response['In-Reply-To'] = in_reply_to
-        response.set_payload(message.encode('utf8'))
+        response.set_payload(message.encode('utf8'), 'utf-8')
 
         server.sendmail(from_email, to_email, response.as_string())
         server.quit()

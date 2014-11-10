@@ -1,3 +1,16 @@
+0.4.1
+-----
+
+* Fixed issue in mail adapter. It didn't add a Content-Type
+  header and sometimes text were rendered incorrectly in the Gmail.
+
+0.4.0
+-----
+
+* Added new command line option `--pid-filename`. The bot will
+  write pid of the main worker's process. This allows to shut it down
+  gracefully when bot was started by a process manager like circusd.
+
 0.3.3
 -----
 

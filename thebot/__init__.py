@@ -504,7 +504,22 @@ class Config(object):
         return 'Config: {}'.format(self._data)
 
     def __getattr__(self, name):
-        return self._data[name]
+        head = name
+        tail = ''
+        data = self._data
+        
+        while head:
+            if head in data:
+                data = data[head]
+                head = tail
+                tail = ''
+            else:
+                if '_' in head:
+                    head, part = head.rsplit('_', 1)
+                    tail = part + '_' + tail
+                else:
+                    raise AttributeError('Attribute {0} does not exist'.format(name))
+        return data
 
 
 class Bot(object):
@@ -644,6 +659,9 @@ class Bot(object):
             level=logging.DEBUG if self.config.verbose else logging.WARNING,
         )
 
+        with open(self.config.pid_filename, 'w') as f:
+            f.write(str(os.getpid()))
+
         # adapters and plugins initialization
         global_objects = dict(bot=self)
 
@@ -678,6 +696,10 @@ class Bot(object):
             help='Log\'s filename. Default: thebot.log.'
         )
         parser.add_argument(
+            '--pid-filename', default='thebot.pid',
+            help='TheBot\'s pid filename. Default: thebot.pid.'
+        )
+        parser.add_argument(
             '--storage-filename', default='thebot.storage',
             help='Path to a database file, used for TheBot\'s memory. Default: thebot.storage.'
         )
@@ -704,9 +726,14 @@ class Bot(object):
             for pattern, callback in self.patterns:
                 match = pattern.match(request.message)
                 if match is not None:
-                    result = callback(request, **match.groupdict())
-                    if result is not None:
-                        raise RuntimeError('Plugin {0} should not return response directly. Use request.respond(some message).')
+                    try:
+                        result = callback(request, **match.groupdict())
+                    except Exception:
+                        logging.getLogger('thebot.core.on_request').exception(
+                            'During processing "{0}" request'.format(request))
+                    else:
+                        if result is not None:
+                            raise RuntimeError('Plugin {0} should not return response directly. Use request.respond(some message).')
                     break
             else:
                 if direct:

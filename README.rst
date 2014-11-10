@@ -9,11 +9,14 @@ The Bot is written in orthodox Python and can be installed via `pip`_.
 It's functionality can be extended by installation of additional python packages,
 you don't have to clone a repository and hack some code there.
 
-Build Status
-------------
+Badges
+------
 
-| This project uses Travis for continuous integration:
-| |travis|_
+.. image:: https://secure.travis-ci.org/svetlyak40wt/thebot.png
+   :target: http://travis-ci.org/svetlyak40wt/thebot
+
+.. image:: http://allmychanges.com/u/svetlyak40wt/python/thebot/badge
+   :target: http://allmychanges.com/u/svetlyak40wt/python/thebot/
 
 Installation
 ------------
@@ -106,6 +109,4 @@ TODO
   them as a notification channel in the ``thebot-webooks`` plugin.
 
 .. _pip: http://pypi.python.org/pypi/pip
-.. |travis| image:: https://secure.travis-ci.org/svetlyak40wt/thebot.png
-.. _travis: http://travis-ci.org/svetlyak40wt/thebot
 
