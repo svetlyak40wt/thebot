@@ -9,11 +9,11 @@ The Bot is written in orthodox Python and can be installed via [pip][].
 It's functionality can be extended by installation of additional python packages,
 you don't have to clone a repository and hack some code there.
 
-Build Status
-------------
+Badges
+------
 
-This project uses Travis for continuous integration:  
-[![Build Status](https://secure.travis-ci.org/svetlyak40wt/thebot.png)](http://travis-ci.org/svetlyak40wt/thebot)
+[![](https://secure.travis-ci.org/svetlyak40wt/thebot.png)](http://travis-ci.org/svetlyak40wt/thebot)
+[![](http://allmychanges.com/p/python/thebot/badge)](http://allmychanges.com/p/python/thebot/)
 
 Installation
 ------------
@@ -66,6 +66,9 @@ Available plugins
 * [github](https://github.com/svetlyak40wt/thebot-github) — allows to track new issues, pull requests and comments.
 * [instagram](https://github.com/svetlyak40wt/thebot-instagram) — posts new popular images from Instagram.
 * [translate](https://github.com/svetlyak40wt/thebot-translate) — translates texts from one language to another.
+* [pomodoro](https://github.com/svetlyak40wt/thebot-pomodoro) — powerful [pomodoro timer](http://pomodorotechnique.com/) to boost your productivity.
+* [draftin](https://github.com/svetlyak40wt/thebot-draftin) — accepts callbacks from draftin.com and runs a shell command to publish post into the static generated blog.
+* [webhooks](https://github.com/svetlyak40wt/thebot-webhooks) — configurable webhooks, to run any number of commands on HTTP POST or GET requests.
 * Add yours plugins to this list!
 
 
@@ -86,5 +89,10 @@ them and come back to ask The Bot to forgive you treason.
 * https://github.com/toastdriven/toastbot uses irckit и gevent
 * https://github.com/gbin/err too complex and over-engeneered architecture, but has plugins.
 
-[pip]: http://pypi.python.org/pypi/pip
+TODO
+----
 
+* Implement method `create_request` in `irc` and `xmpp` adapters, to be able to use
+  them as a notification channel in the `thebot-webooks` plugin.
+
+[pip]: http://pypi.python.org/pypi/pip

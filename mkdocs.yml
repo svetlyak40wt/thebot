@@ -1,0 +1,4 @@
+site_name: TheBot
+pages:
+- [index.md, Home]
+theme: readthedocs
