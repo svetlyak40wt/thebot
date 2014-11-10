@@ -44,13 +44,6 @@
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
       <ul class="current">
     
-        
-            <li class="toctree-l1 ">
-                <a class="" href="about/">About</a>
-            </li>
-        
-
-    
 </ul>
 
       </div>
@@ -80,32 +73,85 @@
 </div>
           <div role="main">
             <div class="section">
-              <h1 id="welcome-to-mkdocs">Welcome to MkDocs</h1>
-<p>For full documentation visit <a href="http://mkdocs.org">mkdocs.org</a>.</p>
-<h2 id="commands">Commands</h2>
-<ul>
-<li><code>mkdocs new [dir-name]</code> - Create a new project.</li>
-<li><code>mkdocs serve</code> - Start the live-reloading docs server.</li>
-<li><code>mkdocs build</code> - Build the documentation site.</li>
-<li><code>mkdocs help</code> - Print this help message.</li>
-</ul>
-<h2 id="project-layout">Project layout</h2>
-<pre class="prettyprint well"><code>mkdocs.yml    # The configuration file.
-docs/
-    index.md  # The documentation homepage.
-    ...       # Other markdown pages, images and other files.
+              <h1 id="the-bot">The Bot</h1>
+<p>This is a general purpose chat bot, extensible in varios ways.
+The reason, why it was written is because NodeJS and CoffeeScript are sucks and
+Hubot uses them.</p>
+<p>The Bot is written in orthodox Python and can be installed via <a href="http://pypi.python.org/pypi/pip">pip</a>.
+It's functionality can be extended by installation of additional python packages,
+you don't have to clone a repository and hack some code there.</p>
+<h2 id="badges">Badges</h2>
+<p><a href="http://travis-ci.org/svetlyak40wt/thebot"><img alt="" src="https://secure.travis-ci.org/svetlyak40wt/thebot.png" /></a>
+<a href="http://allmychanges.com/p/python/thebot/"><img alt="" src="http://allmychanges.com/p/python/thebot/badge" /></a></p>
+<h2 id="installation">Installation</h2>
+<pre class="prettyprint well"><code>virtualenv env
+source env/bin/activate
+pip install 'git+git://github.com/svetlyak40wt/thebot.git'
+thebot
 </code></pre>
+<p>To connect TheBot to the IRC channel do:</p>
+<pre class="prettyprint well"><code>thebot --adapter irc --irc-host irc.freenode.net --irc-channels somechannel --irc-nick thebot
+</code></pre>
+<p>To turn on more useful plugins, install them via pip. For example, to install Instagram and Github plugins, do:</p>
+<pre class="prettyprint well"><code>pip install 'git+git://github.com/svetlyak40wt/thebot-github.git'
+pip install 'git+git://github.com/svetlyak40wt/thebot-instagram.git'
+thebot --adapter irc --plugins instagram --irc-host irc.freenode.net --irc-channels somechannel --irc-nick thebot
+</code></pre>
+<p>Then, join this channel and send <code>thebot, instagram on</code> message. To list all supported command, issue the message
+<code>thebot, help</code>.</p>
+<h2 id="available-adapters">Available adapters</h2>
+<h3 id="builtins">Builtins</h3>
+<ul>
+<li><a href="https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/irc.py">irc</a>;</li>
+<li><a href="https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/xmpp.py">xmpp</a>;</li>
+<li><a href="https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/http.py">http</a>;</li>
+<li><a href="https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/console.py">console</a>;</li>
+<li><a href="https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/mail.py">mail</a>;</li>
+</ul>
+<h3 id="external">External</h3>
+<ul>
+<li>Be the first, who will write the one!</li>
+</ul>
+<h2 id="available-plugins">Available plugins</h2>
+<h3 id="builtins_1">Builtins</h3>
+<ul>
+<li><a href="https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/image.py">image</a> — uses Google Image and <a href="http://mustachify.me">mustachify.me</a>, to search images and to make them funny.</li>
+<li><a href="https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/math.py">math</a> — uses Google Calculator to do some math and convert currencies.</li>
+<li><a href="https://github.com/svetlyak40wt/thebot/blob/master/thebot/batteries/todo.py">todo</a> — a simple task manager which will store your tasks and send you reminders.</li>
+</ul>
+<h3 id="external_1">External</h3>
+<ul>
+<li><a href="https://github.com/svetlyak40wt/thebot-github">github</a> — allows to track new issues, pull requests and comments.</li>
+<li><a href="https://github.com/svetlyak40wt/thebot-instagram">instagram</a> — posts new popular images from Instagram.</li>
+<li><a href="https://github.com/svetlyak40wt/thebot-translate">translate</a> — translates texts from one language to another.</li>
+<li><a href="https://github.com/svetlyak40wt/thebot-pomodoro">pomodoro</a> — powerful <a href="http://pomodorotechnique.com/">pomodoro timer</a> to boost your productivity.</li>
+<li><a href="https://github.com/svetlyak40wt/thebot-draftin">draftin</a> — accepts callbacks from draftin.com and runs a shell command to publish post into the static generated blog.</li>
+<li><a href="https://github.com/svetlyak40wt/thebot-webhooks">webhooks</a> — configurable webhooks, to run any number of commands on HTTP POST or GET requests.</li>
+<li>Add yours plugins to this list!</li>
+</ul>
+<h2 id="alternatives">Alternatives</h2>
+<p>There are some bots written in Python, but all of them sucks, because,
+most of the works only with IRC and none of them has such beautiful
+architecture as The Bot.</p>
+<p>But if you still have some doubts, here is a list of some bots. Go, try
+them and come back to ask The Bot to forgive you treason.</p>
+<ul>
+<li>http://gozerbot.org/ and his son https://code.google.com/p/jsonbot/</li>
+<li>http://pypi.python.org/pypi/supybot/</li>
+<li>https://github.com/brunobord/cmdbot/</li>
+<li>http://inamidst.com/phenny/ and a Python3 version https://github.com/sbp/duxlot/</li>
+<li>https://github.com/toastdriven/toastbot uses irckit и gevent</li>
+<li>https://github.com/gbin/err too complex and over-engeneered architecture, but has plugins.</li>
+</ul>
+<h2 id="todo">TODO</h2>
+<ul>
+<li>Implement method <code>create_request</code> in <code>irc</code> and <code>xmpp</code> adapters, to be able to use
+  them as a notification channel in the <code>thebot-webooks</code> plugin.</li>
+</ul>
 
             </div>
           </div> 
           <footer>
-  
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="about/" class="btn btn-neutral float-right" title="About"/>Next <span class="icon icon-circle-arrow-right"></span></a>
-      
-      
-    </div>
   
 
   <hr/>
