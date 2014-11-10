@@ -29,7 +29,7 @@ class Request(thebot.Request):
         citate = ''
         if self.message:
             citate = '> {}\n'.format(self.message)
-            
+
         self.adapter.send(
             citate + message,
             self.user,
@@ -162,13 +162,6 @@ class Adapter(thebot.Adapter):
                        subject=None):
         return Request(self, message, email, message_id, subject)
 
-    def create_request(self,
-                       message=None,
-                       email=None,
-                       message_id=None,
-                       subject=None):
-        return Request(self, message, email, message_id, subject)
-
     def _fetch_messages(self):
         logger = logging.getLogger('thebot.batteries.mail')
 
@@ -241,5 +234,3 @@ class Adapter(thebot.Adapter):
     def close(self):
         self.imap.close()
         self.imap.logout()
-
-
