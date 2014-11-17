@@ -15,8 +15,8 @@ Badges
 .. image:: https://secure.travis-ci.org/svetlyak40wt/thebot.png
    :target: http://travis-ci.org/svetlyak40wt/thebot
 
-.. image:: http://allmychanges.com/u/svetlyak40wt/python/thebot/badge
-   :target: http://allmychanges.com/u/svetlyak40wt/python/thebot/
+.. image:: http://allmychanges.com/p/python/thebot/badge
+   :target: http://allmychanges.com/p/python/thebot/
 
 Installation
 ------------
